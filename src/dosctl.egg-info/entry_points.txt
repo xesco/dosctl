@@ -1,0 +1,2 @@
+[console_scripts]
+dosctl = dosctl.main:cli
