@@ -2,12 +2,6 @@
 
 A command-line tool to manage and play DOS games.
 
-## Goals
-
-*   **Easy to Use:** `dosctl` is designed to be intuitive and "just work" out-of-the-box.
-*   **Extensible:** Designed to be easily extended with new game engines and collections.
-*   **Configurable:** While it has sensible defaults, it can be configured to fit your needs.
-
 ## Getting Started
 
 1.  **List Games:** Find a game you want to play. The tool will automatically download the game list on the first run.
@@ -96,4 +90,4 @@ Starting 'METAL.EXE' with DOSBox...
 
 ## Collection Backend
 
-The default collection is the **Total DOS Collection Release 14** from the Internet Archive.
+The default collection is the [**Total DOS Collection Release 14**](https://archive.org/details/Total_DOS_Collection_Release_14) from the Internet Archive.
