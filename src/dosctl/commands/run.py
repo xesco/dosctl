@@ -37,9 +37,13 @@ def run(collection, game_id, command_parts, configure):
             return
 
         # Step 1: Determine the command to run.
-        # If the user provides a command on the CLI, it takes highest priority.
-        # Otherwise, we check the config store for a saved command.
-        chosen_command_str = " ".join(command_parts) if command_parts else get_game_command(game_id)
+        # The --configure flag takes precedence over everything.
+        if configure:
+            chosen_command_str = None
+        else:
+            # If the user provides a command on the CLI, it takes priority.
+            # Otherwise, we check the config store for a saved command.
+            chosen_command_str = " ".join(command_parts) if command_parts else get_game_command(game_id)
 
         # Step 2: If no command is found (first run), prompt the user.
         if not chosen_command_str:
@@ -67,7 +71,7 @@ def run(collection, game_id, command_parts, configure):
                     click.echo("Please choose one of the following to run:")
                     click.echo(menu_text)
                     
-                    choice = click.prompt("Select a file to execute", type=int, default=1)
+                    choice = click.prompt("Select a file to execute", type=int)
                     if 1 <= choice <= len(sorted_executables):
                         chosen_command_str = sorted_executables[choice - 1]
                         break # Exit the loop on valid choice
