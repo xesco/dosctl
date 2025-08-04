@@ -1,6 +1,0 @@
-click
-requests
-tqdm
-
-[dev]
-pytest
