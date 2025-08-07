@@ -140,7 +140,7 @@ class ArchiveOrgCollection(BaseCollection):
 
         if local_zip_path.exists() and not force:
             print(f"'{filename}' already exists in '{destination_path}'. Use --force to overwrite.")
-            return
+            return local_zip_path
 
         headers = {'User-Agent': 'Mozilla/5.0'}
 
