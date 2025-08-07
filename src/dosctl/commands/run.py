@@ -33,7 +33,7 @@ def run(collection, game_id, command_parts, configure):
         return
 
     try:
-        game, game_install_path = install_game(collection, game_id)
+        _, game_install_path = install_game(collection, game_id)
         if not game_install_path:
             return
 

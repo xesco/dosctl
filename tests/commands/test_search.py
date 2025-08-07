@@ -2,7 +2,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 from dosctl.main import cli
 
-@patch('dosctl.lib.decorators.ArchiveOrgCollection')
+@patch('dosctl.lib.decorators.TotalDOSCollectionRelease14')
 def test_search_command_runs(mock_collection_class):
     """A basic smoke test to ensure the search command runs."""
     runner = CliRunner()

@@ -11,16 +11,15 @@ from .base import BaseCollection
 
 class ArchiveOrgCollection(BaseCollection):
     """
-    A collection backend for the Total DOS Collection Release 14 from archive.org.
-
-    This class handles downloading the master list of games, caching it locally,
-    and constructing the correct download URLs for individual games.
+    Base class for Archive.org collection backends.
+    Handles common functionality like downloading, caching, and parsing.
     """
 
-    def __init__(self, source: str, cache_dir: str):
+    def __init__(self, source: str, cache_dir: str, collection_name: str):
         super().__init__(source)
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.collection_name = collection_name
         self._games_data: List[Dict] = []
 
         # The download URL for a file is different from the source URL of the list.
@@ -51,6 +50,7 @@ class ArchiveOrgCollection(BaseCollection):
     def _parse_filename(self, filename: str) -> Dict:
         """
         Parses a filename to extract the year and a clean name.
+        Can be overridden by subclasses for different parsing logic.
         """
         name_part = filename.replace(".zip", "")
         year = None
@@ -79,7 +79,7 @@ class ArchiveOrgCollection(BaseCollection):
 
             filename_with_ext = Path(full_path).name
 
-            # Use the new parser
+            # Use the parser (can be overridden by subclasses)
             parsed_details = self._parse_filename(filename_with_ext)
 
             # The game's unique ID is a short, stable hash of its full path.
@@ -108,13 +108,23 @@ class ArchiveOrgCollection(BaseCollection):
         return None
 
     def get_download_url(self, game_id: str) -> Optional[str]:
+        """
+        Constructs the download URL for a specific game.
+        Can be overridden by subclasses for different URL patterns.
+        """
         game = self._find_game(game_id)
         if not game:
             return None
 
         # The download URL is constructed from the base item name and the full path
         encoded_full_path = quote(game["full_path"])
-        return f"https://archive.org/download/{self.item_name}/TDC_Release_14.zip/{encoded_full_path}"
+        return self._build_download_url(encoded_full_path)
+
+    def _build_download_url(self, encoded_full_path: str) -> str:
+        """
+        Builds the actual download URL. Override this in subclasses for different URL patterns.
+        """
+        raise NotImplementedError("Subclasses must implement _build_download_url")
 
     def download_game(self, game_id: str, destination: str, force: bool = False) -> None:
         download_url = self.get_download_url(game_id)
@@ -176,3 +186,42 @@ class ArchiveOrgCollection(BaseCollection):
         with zipfile.ZipFile(zip_filepath, 'r') as zip_ref:
             zip_ref.extractall(install_path)
         print("Unzip complete.")
+
+
+class TotalDOSCollectionRelease14(ArchiveOrgCollection):
+    """
+    Specific implementation for Total DOS Collection Release 14.
+    """
+
+    def __init__(self, source: str, cache_dir: str):
+        super().__init__(source, cache_dir, "Total DOS Collection Release 14")
+
+    def _build_download_url(self, encoded_full_path: str) -> str:
+        """
+        Builds the download URL specific to TDC Release 14 structure.
+        """
+        return f"https://archive.org/download/{self.item_name}/TDC_Release_14.zip/{encoded_full_path}"
+
+
+# Example of how to add a new version:
+#
+# class TotalDOSCollectionRelease15(ArchiveOrgCollection):
+#     """
+#     Specific implementation for Total DOS Collection Release 15.
+#     """
+#
+#     def __init__(self, source: str, cache_dir: str):
+#         super().__init__(source, cache_dir, "Total DOS Collection Release 15")
+#
+#     def _build_download_url(self, encoded_full_path: str) -> str:
+#         """
+#         Builds the download URL specific to TDC Release 15 structure.
+#         """
+#         return f"https://archive.org/download/{self.item_name}/TDC_Release_15.zip/{encoded_full_path}"
+#
+#     def _parse_filename(self, filename: str) -> Dict:
+#         """
+#         Override if Release 15 has different filename patterns.
+#         """
+#         # Custom parsing logic for Release 15 if needed
+#         return super()._parse_filename(filename)
