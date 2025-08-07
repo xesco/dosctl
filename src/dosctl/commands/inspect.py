@@ -1,6 +1,5 @@
 import click
-from pathlib import Path
-from dosctl.config import DATA_DIR
+from dosctl.config import INSTALLED_DIR
 from dosctl.lib.decorators import ensure_cache
 
 @click.command()
@@ -10,8 +9,7 @@ def inspect(collection, game_id):
     """
     Inspects the installed files for a given game.
     """
-    install_dir = DATA_DIR / 'installed'
-    game_install_path = install_dir / game_id
+    game_install_path = INSTALLED_DIR / game_id
 
     if not game_install_path.exists() or not game_install_path.is_dir():
         click.echo(f"Error: Game with ID '{game_id}' is not installed.", err=True)

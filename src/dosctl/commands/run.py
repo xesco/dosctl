@@ -5,6 +5,7 @@ from dosctl.lib.decorators import ensure_cache
 from dosctl.lib.game import install_game
 from dosctl.lib.config_store import get_game_command, set_game_command
 from dosctl.lib.system import is_dosbox_installed
+from dosctl.lib.executables import find_executables, executable_exists
 
 @click.command()
 @click.argument('game_id')
@@ -36,74 +37,83 @@ def run(collection, game_id, command_parts, configure):
         if not game_install_path:
             return
 
-        # Step 1: Determine the command to run.
-        # The --configure flag takes precedence over everything.
-        if configure:
-            chosen_command_str = None
-        else:
-            # If the user provides a command on the CLI, it takes priority.
-            # Otherwise, we check the config store for a saved command.
-            chosen_command_str = " ".join(command_parts) if command_parts else get_game_command(game_id)
-
-        # Step 2: If no command is found (first run), prompt the user.
+        # Determine the command to run
+        chosen_command_str = _get_or_prompt_command(game_id, game_install_path, command_parts, configure)
         if not chosen_command_str:
-            click.echo(f"No default executable set for game '{game_id}'. Searching...")
-            
-            executables = list(game_install_path.glob('**/*.[eE][xX][eE]'))
-            executables.extend(list(game_install_path.glob('**/*.[cC][oO][mM]')))
-            executables.extend(list(game_install_path.glob('**/*.[bB][aA][tT]')))
-            
-            if not executables:
-                click.echo(f"Error: No executables (.exe, .com, .bat) found in the archive for game '{game_id}'.", err=True)
-                return
-            
-            sorted_executables = sorted([e.name for e in executables])
+            return
 
-            # If there's only one option, choose it automatically.
-            if len(sorted_executables) == 1 and not configure:
-                chosen_command_str = sorted_executables[0]
-                click.echo(f"Found a single executable: '{chosen_command_str}'. Setting as default.")
-            else:
-                # Loop until the user makes a valid choice
-                while True:
-                    menu_items = [f"  {i}: {exe_name.upper()}" for i, exe_name in enumerate(sorted_executables, 1)]
-                    menu_text = "\n".join(menu_items)
-                    click.echo("Please choose one of the following to run:")
-                    click.echo(menu_text)
-                    
-                    choice = click.prompt("Select a file to execute", type=int)
-                    if 1 <= choice <= len(sorted_executables):
-                        chosen_command_str = sorted_executables[choice - 1]
-                        break # Exit the loop on valid choice
-                    else:
-                        click.echo("Invalid choice. Please try again.", err=True)
-
-        # Step 3: Save the chosen command for future runs.
+        # Save the chosen command for future runs
         set_game_command(game_id, chosen_command_str)
-        
-        # Step 4: Validate that the chosen executable exists.
+
+        # Validate that the chosen executable exists
         executable_name = chosen_command_str.split()[0]
-        game_exe_path = game_install_path / executable_name
-        if not game_exe_path.exists():
+        if not executable_exists(game_install_path, executable_name):
             click.echo(f"Error: Executable '{executable_name}' not found.", err=True)
             set_game_command(game_id, None)
             return
 
-        # Step 5: Launch the game.
-        click.echo(f"Starting '{chosen_command_str.upper()}' with DOSBox...")
-        
-        command = [
-            'dosbox',
-            '-c', f'MOUNT C "{game_install_path}"',
-            '-c', 'C:',
-            '-c', chosen_command_str
-        ]
-        
-        subprocess.Popen(command,
-                         stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL)
+        # Launch the game
+        _launch_game(game_install_path, chosen_command_str)
 
     except FileNotFoundError as e:
         click.echo(f"Error: {e}", err=True)
     except Exception as e:
         click.echo(f"An unexpected error occurred: {e}", err=True)
+
+def _get_or_prompt_command(game_id, game_install_path, command_parts, configure):
+    """Get the command to run, prompting if necessary."""
+    if configure:
+        return _prompt_for_executable(game_install_path, configure)
+
+    # If user provides command on CLI, use it
+    if command_parts:
+        return " ".join(command_parts)
+
+    # Check for saved command
+    saved_command = get_game_command(game_id)
+    if saved_command:
+        return saved_command
+
+    # First run - prompt for executable
+    click.echo(f"No default executable set for game '{game_id}'. Searching...")
+    return _prompt_for_executable(game_install_path, configure)
+
+def _prompt_for_executable(game_install_path, force_menu=False):
+    """Prompt user to select an executable."""
+    executables = find_executables(game_install_path)
+
+    if not executables:
+        click.echo(f"Error: No executables (.exe, .com, .bat) found in the archive.", err=True)
+        return None
+
+    # If there's only one option and we're not forcing the menu, choose it automatically
+    if len(executables) == 1 and not force_menu:
+        click.echo(f"Found a single executable: '{executables[0]}'. Setting as default.")
+        return executables[0]
+
+    # Show menu for user selection
+    while True:
+        menu_items = [f"  {i}: {exe_name.upper()}" for i, exe_name in enumerate(executables, 1)]
+        click.echo("Please choose one of the following to run:")
+        click.echo("\n".join(menu_items))
+
+        choice = click.prompt("Select a file to execute", type=int)
+        if 1 <= choice <= len(executables):
+            return executables[choice - 1]
+        else:
+            click.echo("Invalid choice. Please try again.", err=True)
+
+def _launch_game(game_install_path, chosen_command_str):
+    """Launch the game with DOSBox."""
+    click.echo(f"Starting '{chosen_command_str.upper()}' with DOSBox...")
+
+    command = [
+        'dosbox',
+        '-c', f'MOUNT C "{game_install_path}"',
+        '-c', 'C:',
+        '-c', chosen_command_str
+    ]
+
+    subprocess.Popen(command,
+                     stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL)

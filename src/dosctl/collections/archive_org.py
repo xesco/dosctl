@@ -22,7 +22,7 @@ class ArchiveOrgCollection(BaseCollection):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._games_data: List[Dict] = []
-        
+
         # The download URL for a file is different from the source URL of the list.
         # We derive the base download URL from the source URL's item name.
         # e.g., https://.../items/ITEM_NAME/file.txt -> https://archive.org/download/ITEM_NAME
@@ -59,14 +59,14 @@ class ArchiveOrgCollection(BaseCollection):
         match = re.search(r'\(([0-9]{4})\)', name_part)
         if match:
             year = match.group(1)
-        
+
         return {"name": name_part, "year": year}
 
     def _populate_games_data(self) -> None:
         cache_file = self.cache_dir / "games.txt"
         if not cache_file.exists():
             return
-        
+
         self._games_data = []
         with open(cache_file, "r", encoding="utf-8") as f:
             content = f.read()
@@ -76,12 +76,12 @@ class ArchiveOrgCollection(BaseCollection):
         for href in zip_hrefs:
             encoded_path = href.split("/")[-1]
             full_path = unquote(encoded_path)
-            
+
             filename_with_ext = Path(full_path).name
-            
+
             # Use the new parser
             parsed_details = self._parse_filename(filename_with_ext)
-            
+
             # The game's unique ID is a short, stable hash of its full path.
             # This prevents collisions and ensures the ID is always the same.
             game_hash = hashlib.sha1(full_path.encode()).hexdigest()
@@ -111,7 +111,7 @@ class ArchiveOrgCollection(BaseCollection):
         game = self._find_game(game_id)
         if not game:
             return None
-        
+
         # The download URL is constructed from the base item name and the full path
         encoded_full_path = quote(game["full_path"])
         return f"https://archive.org/download/{self.item_name}/TDC_Release_14.zip/{encoded_full_path}"
@@ -120,11 +120,11 @@ class ArchiveOrgCollection(BaseCollection):
         download_url = self.get_download_url(game_id)
         if not download_url:
             raise FileNotFoundError(f"Game with ID '{game_id}' not found.")
-        
+
         game = self._find_game(game_id)
         destination_path = Path(destination)
         destination_path.mkdir(parents=True, exist_ok=True)
-        
+
         filename = game["name"] + ".zip"
         local_zip_path = destination_path / filename
 
@@ -133,21 +133,21 @@ class ArchiveOrgCollection(BaseCollection):
             return
 
         headers = {'User-Agent': 'Mozilla/5.0'}
-        
+
         # Use a try...except block for more specific error handling
         try:
             with requests.get(download_url, headers=headers, stream=True) as r:
                 r.raise_for_status()
-                
+
                 total_size = int(r.headers.get('content-length', 0))
-                
+
                 with tqdm.wrapattr(open(local_zip_path, "wb"), "write",
                                  miniters=1,
                                  total=total_size,
                                  desc=f"Downloading '{filename}'") as fout:
                     for chunk in r.iter_content(chunk_size=8192):
                         fout.write(chunk)
-            
+
             print(f"Successfully downloaded '{filename}'")
         except requests.exceptions.RequestException as e:
             print(f"\nError downloading '{filename}': {e}")
@@ -155,7 +155,7 @@ class ArchiveOrgCollection(BaseCollection):
             if local_zip_path.exists():
                 local_zip_path.unlink()
             return None
-        
+
         return local_zip_path
 
     def unzip_game(self, game_id: str, download_path: Path, install_path: Path) -> None:

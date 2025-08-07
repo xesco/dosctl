@@ -4,7 +4,7 @@ A command-line tool to manage and play DOS games.
 
 ## Getting Started
 
-1.  **List Games:** Find a game you want to play. The tool will automatically download the game list on the first run.
+1.  **List Games:** Find a game you want to play. The tool will automatically download the game list from the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the first run.
     ```bash
     dosctl list
     ```
@@ -90,4 +90,12 @@ Starting 'METAL.EXE' with DOSBox...
 
 ## Collection Backend
 
-The default collection is the [**Total DOS Collection Release 14**](https://archive.org/details/Total_DOS_Collection_Release_14) from the Internet Archive.
+By default, `dosctl` uses the [**Total DOS Collection Release 14**](https://archive.org/details/Total_DOS_Collection_Release_14) from the Internet Archive as its game collection source. This comprehensive collection contains thousands of DOS games from the 1980s and 1990s, all ready to download and play.
+
+The collection includes:
+- Classic DOS games from various genres (adventure, action, strategy, RPG, etc.)
+- Games from major publishers like LucasArts, Sierra, id Software, and many others
+- Both well-known titles and obscure gems
+- Games in their original format, preserved for historical accuracy
+
+When you first run `dosctl list` or `dosctl search`, the tool will automatically download the complete game catalog from this collection. The games themselves are downloaded individually only when you choose to run them.

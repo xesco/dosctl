@@ -1,6 +1,7 @@
 import click
 import re
 from dosctl.lib.decorators import ensure_cache
+from dosctl.lib.display import sort_games, display_games
 
 @click.command()
 @click.argument('query', required=False)
@@ -17,39 +18,30 @@ def search(collection, query, case_sensitive, year, sort_by):
         return
 
     games = collection.get_games()
-    
+
     if not games:
         click.echo("No games found in cache.")
         return
-        
-    # --- Search Logic ---
+
+    # Search Logic
     results = []
     flags = 0 if case_sensitive else re.IGNORECASE
-    
+
     for game in games:
         # Year filter
         if year and str(game.get('year')) != str(year):
             continue
-            
+
         # Name filter (only if query is provided)
         if query and not re.search(query, game['name'], flags):
             continue
-        
+
         results.append(game)
-            
-    # --- Display Logic ---
+
+    # Display Logic
     if not results:
         click.echo("No games found matching your criteria.")
         return
-        
-    click.echo(f"Found {len(results)} game(s):")
-    
-    # Sort results based on the user's choice
-    if sort_by == 'year':
-        results = sorted(results, key=lambda g: int(g.get('year', 0) or 0))
-    else:
-        results = sorted(results, key=lambda g: g['name'])
-        
-    for game in results:
-        year_str = f"({game.get('year', '----')})"
-        click.echo(f"  [{game['id']}] {year_str} {game['name']}")
+
+    results = sort_games(results, sort_by)
+    display_games(results, f"Found {len(results)} game(s):")

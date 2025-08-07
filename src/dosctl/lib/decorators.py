@@ -17,7 +17,7 @@ def ensure_cache(f):
         )
         # This will auto-refresh if the cache is missing
         collection.ensure_cache_is_present()
-        
+
         # Pass the collection object to the command
         return f(collection, *args, **kwargs)
     return decorated_function
