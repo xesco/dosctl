@@ -5,11 +5,18 @@ from .commands.run import run
 from .commands.inspect import inspect
 from .commands.delete import delete
 from .commands.refresh import refresh
+from . import __version__
 
-@click.group()
-def cli():
+@click.group(invoke_without_command=True)
+@click.option('-v', '--version', is_flag=True, help='Show the version and exit.')
+@click.pass_context
+def cli(ctx, version):
     """A command-line tool to manage and play DOS games."""
-    pass
+    if version:
+        click.echo(f"DOSCtl {__version__}")
+        return
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
 
 cli.add_command(list_games)
 cli.add_command(search)
