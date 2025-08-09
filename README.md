@@ -2,11 +2,6 @@
 
 A command-line tool to manage and play DOS games.
 
-**Version:** 0.2.0
-
-> **⚠️ Windows Support Notice**
-> Windows support is currently **experimental**. While the core functionality should work, it has not been extensively tested on Windows systems. Linux and macOS are the primary supported platforms.
-
 ## Installation
 
 ### Requirements
@@ -276,3 +271,9 @@ When you first run `dosctl list` or `dosctl search`, the tool will automatically
 **No Liability**: The author is not responsible for copyright infringement or any damages arising from use of this software.
 
 **Legal Compliance**: Ensure you have proper legal rights to any games or software you manage with this tool. Respect copyright laws and software licenses.
+
+## ⚠️ Windows Support Notice
+
+Windows support is currently **experimental**. While the core functionality should work, it has not been extensively tested on Windows systems. Linux and macOS are the primary supported platforms.
+
+If you encounter issues on Windows, please report them on GitHub. Contributions to improve Windows compatibility are welcome!
