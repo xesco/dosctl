@@ -15,11 +15,11 @@ def refresh(force):
 
     click.echo("Ensuring application directories exist...")
     ensure_dirs_exist()
-    
+
     collection = TotalDOSCollectionRelease14(
         source=DEFAULT_COLLECTION_SOURCE,
         cache_dir=COLLECTION_CACHE_DIR
     )
-    
+
     click.echo("Forcing a refresh of the game lists...")
     collection.ensure_cache_is_present(force_refresh=True)

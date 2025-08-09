@@ -4,8 +4,9 @@ from dosctl.lib.decorators import ensure_cache
 
 @click.command()
 @click.argument('game_id')
+@click.option('-e', '--executables', is_flag=True, help='Show only executable files (.exe, .com, .bat).')
 @ensure_cache
-def inspect(collection, game_id):
+def inspect(collection, game_id, executables):
     """
     Inspects the installed files for a given game.
     """
@@ -25,9 +26,20 @@ def inspect(collection, game_id):
     # Use rglob to list all files recursively
     files = sorted([f for f in game_install_path.rglob('*') if f.is_file()])
 
+    if executables:
+        # Filter to only executable file extensions
+        executable_extensions = {'.exe', '.com', '.bat'}
+        files = [f for f in files if f.suffix.lower() in executable_extensions]
+
     if not files:
-        click.echo("No files found in the installation directory.")
+        if executables:
+            click.echo("No executable files found in the installation directory.")
+        else:
+            click.echo("No files found in the installation directory.")
         return
+
+    if executables:
+        click.echo("Executable files:")
 
     for file_path in files:
         # Get the path relative to the game's install directory

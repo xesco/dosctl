@@ -25,6 +25,26 @@ Every game in the collection is assigned a unique 8-character ID (a hash of its 
 ### First-Time Run
 The first time you run a game, `dosctl` will prompt you to select the main executable file from a list of possibilities (`.exe`, `.com`, `.bat`). Your choice is remembered, so subsequent runs will launch the game immediately. You can force this selection again by using the `--configure` flag.
 
+### Command Parts
+You can specify exactly what DOS command to run by providing **command parts** after the game ID. This gives you fine-grained control over game execution:
+
+- **Without command parts:** `dosctl run <game-id>` uses the saved default executable
+- **With command parts:** `dosctl run <game-id> setup.exe -silent` runs the exact command you specify
+
+Command parts are joined with spaces to form the final DOS command. This is useful for:
+- Running different executables (setup, configuration tools, etc.)
+- Passing command-line arguments to games
+- Running batch files with parameters
+- Bypassing the saved default when needed
+
+**Examples:**
+```bash
+dosctl run 62ef2769 setup.exe          # Run setup instead of main game
+dosctl run 62ef2769 game.exe -debug     # Run with debug flag
+dosctl run 62ef2769 install.bat /q      # Run batch file quietly
+dosctl run 62ef2769 editor.exe level1   # Run level editor with specific level
+```
+
 ## Usage Examples
 
 ### List only your installed games
@@ -54,6 +74,59 @@ Found a single executable: 'METAL.EXE'. Setting as default.
 Starting 'METAL.EXE' with DOSBox...
 ```
 
+### Run a specific executable directly
+```bash
+$ dosctl run dd228682 setup.exe
+Starting 'SETUP.EXE' with DOSBox...
+```
+
+### Run with command-line arguments
+```bash
+$ dosctl run dd228682 game.exe -difficulty hard -level 3
+Starting 'GAME.EXE -DIFFICULTY HARD -LEVEL 3' with DOSBox...
+```
+
+### Run main executable with required parameters
+```bash
+$ dosctl run dd228682 metal.exe soundblaster
+Starting 'METAL.EXE SOUNDBLASTER' with DOSBox...
+```
+
+### Force reconfiguration of saved executable
+```bash
+$ dosctl run dd228682 --configure
+Please choose one of the following to run:
+  1: METAL.EXE
+  2: SETUP.EXE
+  3: README.BAT
+Select a file to execute: 2
+Starting 'SETUP.EXE' with DOSBox...
+```
+
+### Inspect game files
+```bash
+$ dosctl inspect dd228682
+Inspecting files for 'Metal Mutant (1991)(Silmarils) [Action, Adventure]' (ID: dd228682)
+Location: ~/.local/share/dosctl/installed/dd228682
+----------------------------------------
+  METAL.EXE
+  SETUP.EXE
+  README.TXT
+  DATA/LEVELS.DAT
+  DATA/SOUNDS.DAT
+```
+
+### Show only executable files
+```bash
+$ dosctl inspect dd228682 --executables
+Inspecting files for 'Metal Mutant (1991)(Silmarils) [Action, Adventure]' (ID: dd228682)
+Location: ~/.local/share/dosctl/installed/dd228682
+----------------------------------------
+Executable files:
+  METAL.EXE
+  SETUP.EXE
+```
+
 ## Commands
 
 *   `dosctl list`
@@ -67,14 +140,24 @@ Starting 'METAL.EXE' with DOSBox...
     *   `-c, --case-sensitive`: Make the search case-sensitive.
     *   `-s, --sort-by [name|year]`: Sort the results by name or year.
 
-*   `dosctl run <game-id> [executable] [args...]`
+*   `dosctl run <game-id> [command-parts...]`
     *   Runs a game. Downloads and installs it if necessary.
     *   Prompts for an executable on the first run.
-    *   You can override the saved executable by providing one.
+    *   **Command Parts:** You can specify the exact DOS command to run instead of using the saved default.
     *   `-c, --configure`: Force the interactive executable selection menu to appear.
+
+    **Examples:**
+    ```bash
+    dosctl run 62ef2769                    # Use saved/default executable
+    dosctl run 62ef2769 --configure        # Choose executable interactively
+    dosctl run 62ef2769 setup.exe          # Run specific executable
+    dosctl run 62ef2769 game.exe -level 5  # Run with command-line arguments
+    dosctl run 62ef2769 install.bat quiet  # Run batch file with parameters
+    ```
 
 *   `dosctl inspect <game-id>`
     *   Shows the list of installed files for a game.
+    *   `-e, --executables`: Show only executable files (.exe, .com, .bat).
 
 *   `dosctl delete <game-id>`
     *   Deletes an installed game and its files.
