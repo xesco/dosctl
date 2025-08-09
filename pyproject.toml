@@ -30,8 +30,8 @@ dependencies = [
 
 [project.urls]
 "Homepage" = "https://github.com/xesco/dosctl"
-"Bug Reports" = "https://github.com/xesco/dosctl/issues"
 "Source" = "https://github.com/xesco/dosctl"
+"Issues" = "https://github.com/xesco/dosctl/issues"
 
 [project.optional-dependencies]
 dev = [

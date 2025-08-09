@@ -44,13 +44,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "sed -i 's/version = \".*\"/version = \"${nextRelease.version}\"/' pyproject.toml && sed -i 's/__version__ = \".*\"/__version__ = \"${nextRelease.version}\"/' src/dosctl/__init__.py"
-      }
-    ],
-    [
-      "@semantic-release/exec",
-      {
-        "publishCmd": "python -m build && python -m twine upload dist/* --username __token__ --password $PYPI_TOKEN"
+        "prepareCmd": "sed -i 's/version = \".*\"/version = \"${nextRelease.version}\"/' pyproject.toml && sed -i 's/__version__ = \".*\"/__version__ = \"${nextRelease.version}\"/' src/dosctl/__init__.py && python -m build"
       }
     ],
     [
@@ -78,7 +72,9 @@
             "path": "dist/*.tar.gz", 
             "label": "Source Distribution"
           }
-        ]
+        ],
+        "failComment": false,
+        "failTitle": false
       }
     ]
   ]
