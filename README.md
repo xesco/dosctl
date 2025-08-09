@@ -2,7 +2,7 @@
 
 A command-line tool to manage and play DOS games.
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 > **⚠️ Windows Support Notice**
 > Windows support is currently **experimental**. While the core functionality should work, it has not been extensively tested on Windows systems. Linux and macOS are the primary supported platforms.
