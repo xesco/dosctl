@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install build
-          npm install -g semantic-release @semantic-release/exec @semantic-release/github
+          npm install -g semantic-release @semantic-release/exec @semantic-release/github @semantic-release/git
 
       - name: Run tests
         run: |
