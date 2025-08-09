@@ -26,8 +26,28 @@ sudo apt install dosbox
 ```
 
 ### Install DOSCtl
+
+#### From PyPI (Recommended)
 ```bash
 pip install dosctl
+```
+
+#### From GitHub (Development Version)
+Install the latest development version directly from GitHub:
+```bash
+pip install git+https://github.com/xesco/dosctl.git
+```
+
+Or install a specific version/tag:
+```bash
+pip install git+https://github.com/xesco/dosctl.git@v0.2.1
+```
+
+For development with editable install:
+```bash
+git clone https://github.com/xesco/dosctl.git
+cd dosctl
+pip install -e ".[dev]"
 ```
 
 ## Getting Started
