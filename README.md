@@ -2,6 +2,8 @@
 
 A command-line tool to manage and play DOS games.
 
+![DOSCtl Screenshot](dosctl-screenshot.png)
+
 ## Installation
 
 ### Requirements
