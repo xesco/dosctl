@@ -49,5 +49,5 @@ jobs:
         run: npx semantic-release
 
       - name: Publish to PyPI
-        if: hashFiles('dist/*') != ''
+        if: startsWith(github.ref, 'refs/tags/')
         uses: pypa/gh-action-pypi-publish@release/v1
