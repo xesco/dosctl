@@ -5,19 +5,33 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dosctl"
 version = "0.1.0"
-description = "A command-line tool to manage and play DOS games."
+description = "A command-line tool to manage and play DOS games via DOSBox."
 readme = "README.md"
 requires-python = ">=3.8"
+keywords = ["dos", "games", "retro", "dosbox", "cli"]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Topic :: Games/Entertainment",
+    "Topic :: System :: Emulators",
 ]
 dependencies = [
     "click",
     "requests",
     "tqdm",
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/xesco/dosctl"
+"Bug Reports" = "https://github.com/xesco/dosctl/issues"
+"Source" = "https://github.com/xesco/dosctl"
 
 [project.optional-dependencies]
 dev = [

@@ -2,6 +2,31 @@
 
 A command-line tool to manage and play DOS games.
 
+**Version:** 0.1.0
+
+## Installation
+
+### Requirements
+- **Python:** 3.8 or higher
+- **DOSBox:** Required for running games
+
+### Install DOSBox
+```bash
+# macOS
+brew install dosbox
+
+# Ubuntu/Debian
+sudo apt install dosbox
+
+# Windows
+# Download from https://www.dosbox.com/
+```
+
+### Install DOSCtl
+```bash
+pip install dosctl
+```
+
 ## Getting Started
 
 1.  **List Games:** Find a game you want to play. The tool will automatically download the game list from the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the first run.
