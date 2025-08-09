@@ -35,7 +35,7 @@ pip install git+https://github.com/xesco/dosctl.git
 
 Or install a specific version/tag:
 ```bash
-pip install git+https://github.com/xesco/dosctl.git@v0.2.1
+pip install git+https://github.com/xesco/dosctl.git@v1.1.0
 ```
 
 For development with editable install:
