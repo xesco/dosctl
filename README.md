@@ -250,7 +250,7 @@ When you first run `dosctl list` or `dosctl search`, the tool will automatically
 
 **Content Responsibility**: This tool does not host or distribute any games. It only helps manage content you legally obtain elsewhere. You are responsible for:
 - Ensuring you have legal rights to any games you manage
-- Respecting copyright laws and software licenses  
+- Respecting copyright laws and software licenses
 - Any legal consequences of your usage
 
 **No Liability**: The author is not responsible for copyright infringement or any damages arising from use of this software.
