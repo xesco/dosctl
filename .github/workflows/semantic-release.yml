@@ -48,11 +48,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Get current HEAD sha before semantic-release
+          BEFORE_SHA=$(git rev-parse HEAD)
+          
+          # Run semantic-release
           npx semantic-release
-          if [ "$SEMANTIC_RELEASE_NEW_RELEASE_PUBLISHED" = "true" ]; then
+          
+          # Get current HEAD sha after semantic-release
+          AFTER_SHA=$(git rev-parse HEAD)
+          
+          # Check if semantic-release created a new commit (which means a release was made)
+          if [ "$BEFORE_SHA" != "$AFTER_SHA" ]; then
             echo "released=true" >> $GITHUB_OUTPUT
+            echo "Release was published!"
           else
             echo "released=false" >> $GITHUB_OUTPUT
+            echo "No release was published."
           fi
 
       - name: Publish to PyPI
