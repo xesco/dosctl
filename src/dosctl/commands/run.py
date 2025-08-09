@@ -6,6 +6,7 @@ from dosctl.lib.game import install_game
 from dosctl.lib.config_store import get_game_command, set_game_command
 from dosctl.lib.system import is_dosbox_installed
 from dosctl.lib.executables import find_executables, executable_exists
+from dosctl.lib.dosbox import get_dosbox_launcher
 
 @click.command()
 @click.argument('game_id')
@@ -107,13 +108,16 @@ def _launch_game(game_install_path, chosen_command_str):
     """Launch the game with DOSBox."""
     click.echo(f"Starting '{chosen_command_str.upper()}' with DOSBox...")
 
-    command = [
-        'dosbox',
-        '-c', f'MOUNT C "{game_install_path}"',
-        '-c', 'C:',
-        '-c', chosen_command_str
-    ]
-
-    subprocess.Popen(command,
-                     stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL)
+    try:
+        # Use the new DOSBox abstraction layer
+        launcher = get_dosbox_launcher()
+        launcher.launch_game(
+            game_path=game_install_path,
+            command=chosen_command_str,
+            exit_on_completion=True  # This matches the previous -c exit behavior
+        )
+    except RuntimeError as e:
+        click.echo(f"Error: {e}", err=True)
+        click.echo("Please ensure DOSBox is installed and available in your system PATH.", err=True)
+    except Exception as e:
+        click.echo(f"Error launching game: {e}", err=True)

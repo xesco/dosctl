@@ -4,6 +4,9 @@ A command-line tool to manage and play DOS games.
 
 **Version:** 0.1.0
 
+> **⚠️ Windows Support Notice**
+> Windows support is currently **experimental**. While the core functionality should work, it has not been extensively tested on Windows systems. Linux and macOS are the primary supported platforms.
+
 ## Installation
 
 ### Requirements
@@ -132,7 +135,7 @@ Starting 'SETUP.EXE' with DOSBox...
 ```bash
 $ dosctl inspect dd228682
 Inspecting files for 'Metal Mutant (1991)(Silmarils) [Action, Adventure]' (ID: dd228682)
-Location: ~/.local/share/dosctl/installed/dd228682
+Location: <dosctl-data-dir>/installed/dd228682
 ----------------------------------------
   METAL.EXE
   SETUP.EXE
@@ -145,7 +148,7 @@ Location: ~/.local/share/dosctl/installed/dd228682
 ```bash
 $ dosctl inspect dd228682 --executables
 Inspecting files for 'Metal Mutant (1991)(Silmarils) [Action, Adventure]' (ID: dd228682)
-Location: ~/.local/share/dosctl/installed/dd228682
+Location: <dosctl-data-dir>/installed/dd228682
 ----------------------------------------
 Executable files:
   METAL.EXE
@@ -192,9 +195,42 @@ Executable files:
 
 ## Configuration
 
-`dosctl` stores its data in standard user directories. On macOS, this will be:
-*   **Configuration:** `~/.config/dosctl/run_config.json`
-*   **Data & Cache:** `~/.local/share/dosctl/`
+`dosctl` stores its data in platform-appropriate directories following OS conventions.
+
+### File Locations
+
+**Linux & macOS:**
+```
+~/.local/share/dosctl/
+├── downloads/         # Downloaded game archives (.zip files)
+├── installed/         # Extracted and installed games
+├── collections/       # Game collection metadata cache
+├── current_session.json
+└── installations.json
+```
+
+**Windows:**
+```
+%USERPROFILE%\AppData\Local\dosctl\
+├── downloads\         # Downloaded game archives (.zip files)
+├── installed\         # Extracted and installed games
+├── collections\       # Game collection metadata cache
+├── current_session.json
+└── installations.json
+```
+
+**Examples:**
+- Linux: `/home/username/.local/share/dosctl/`
+- macOS: `/Users/username/.local/share/dosctl/`
+- Windows: `C:\Users\username\AppData\Local\dosctl\`
+
+### Storage Requirements
+
+- **downloads/**: Game archives (typically 1-50 MB each)
+- **installed/**: Extracted games (typically 2-100 MB each)
+- **collections/**: Metadata cache (~5 MB)
+
+Plan for several GB of storage if you install many games.
 
 ## Collection Backend
 

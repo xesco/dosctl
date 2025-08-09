@@ -1,5 +1,6 @@
 import shutil
+from .dosbox.launcher import is_dosbox_available
 
 def is_dosbox_installed() -> bool:
-    """Checks if the 'dosbox' command is available in the system's PATH."""
-    return shutil.which('dosbox') is not None
+    """Checks if DOSBox is available on the system (backward compatibility)."""
+    return is_dosbox_available()

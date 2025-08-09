@@ -1,23 +1,40 @@
 from pathlib import Path
+from .lib.platform import get_platform
 
-# Define the base directories for config and data
-CONFIG_DIR = Path.home() / ".config" / "dosctl"
-DATA_DIR = Path.home() / ".local" / "share" / "dosctl"
+# Get platform-specific directories
+_platform = get_platform()
+
+# Define the base directories for config and data (now platform-aware)
+CONFIG_DIR = _platform.get_config_dir()
+DATA_DIR = _platform.get_data_dir()
 
 # Define the specific cache directory for collections
-COLLECTION_CACHE_DIR = DATA_DIR / "collections"
+COLLECTION_CACHE_DIR = _platform.get_collections_cache_dir()
 
 # Define game-specific directories
-DOWNLOADS_DIR = DATA_DIR / "downloads"
-INSTALLED_DIR = DATA_DIR / "installed"
+DOWNLOADS_DIR = _platform.get_downloads_dir()
+INSTALLED_DIR = _platform.get_installed_dir()
 
 # Define the default source URL for the main game collection
 DEFAULT_COLLECTION_SOURCE = "https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip"
 
 def ensure_dirs_exist():
     """Create the config and data directories if they don't exist."""
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    COLLECTION_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
-    INSTALLED_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        COLLECTION_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
+        INSTALLED_DIR.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        # Handle permission errors gracefully
+        pass
+
+# Backward compatibility functions for ui.py
+def get_dosctl_config_dir() -> str:
+    """Get configuration directory as string (backward compatibility)."""
+    return str(CONFIG_DIR)
+
+def get_dosctl_cache_dir() -> str:
+    """Get cache directory as string (backward compatibility)."""
+    return str(_platform.get_cache_dir())
