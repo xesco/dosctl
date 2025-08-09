@@ -44,21 +44,19 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
-
-      - name: Get new tag
-        id: tag
         run: |
-          # Check if the current commit has a tag
-          if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
-            echo "tag=$(git describe --exact-match --tags HEAD)" >> $GITHUB_OUTPUT
-            echo "has_tag=true" >> $GITHUB_OUTPUT
+          # Store semantic-release output to check if a release was made
+          if npx semantic-release --dry-run=false 2>&1 | tee sr_output.log | grep -q "There are no relevant changes"; then
+            echo "released=false" >> $GITHUB_OUTPUT
+            echo "No release published"
           else
-            echo "has_tag=false" >> $GITHUB_OUTPUT
+            echo "released=true" >> $GITHUB_OUTPUT
+            echo "Release published"
           fi
 
       - name: Publish to PyPI
-        if: steps.tag.outputs.has_tag == 'true'
+        if: steps.release.outputs.released == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
