@@ -1,3 +1,20 @@
+# Contributing to DOSCtl
+
+## ⚠️ Important Disclaimer
+
+**No Warranty**: This software is provided "as is" without warranty of any kind, express or implied. Use at your own risk.
+
+**User Responsibility**: You are solely responsible for your actions when using this tool. The author(s) are not liable for any damages, legal issues, or consequences arising from the use of this software.
+
+**Content Disclaimer**: This tool does not host, distribute, or provide any games or software. It is merely a management interface for content you legally obtain elsewhere. The author(s) are not responsible for:
+- Any copyright infringement you may cause
+- The legality of content you choose to manage with this tool
+- Ensuring you have proper licenses for software you use
+
+**Use Responsibly**: Ensure you have proper legal rights to any games or software you manage with this tool. Respect copyright laws and software licenses.
+
+---
+
 # Commit Message Format
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated semantic releases.

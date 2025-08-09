@@ -4,6 +4,17 @@ A command-line tool to manage and play DOS games.
 
 **Version:** 0.2.0
 
+## ⚠️ Important Disclaimer
+
+**Use at Your Own Risk**: This software is provided "as is" without any warranty. You are solely responsible for your actions when using this tool.
+
+**Content Responsibility**: This tool does not host or distribute any games. It only helps manage content you legally obtain elsewhere. You are responsible for:
+- Ensuring you have legal rights to any games you manage
+- Respecting copyright laws and software licenses  
+- Any legal consequences of your usage
+
+**No Liability**: The author is not responsible for copyright infringement or any damages arising from use of this software.
+
 > **⚠️ Windows Support Notice**
 > Windows support is currently **experimental**. While the core functionality should work, it has not been extensively tested on Windows systems. Linux and macOS are the primary supported platforms.
 
