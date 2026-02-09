@@ -1,281 +1,117 @@
 # DOSCtl
 
-A command-line tool to manage and play DOS games.
+A command-line tool to manage and play DOS games via DOSBox.
 
 ![DOSCtl Screenshot](dosctl-screenshot.png)
 
 ## Installation
 
-### Requirements
-- **Python:** 3.8 or higher
-- **DOSBox:** Required for running games
+**Requirements:** Python 3.8+, [DOSBox](https://www.dosbox.com/)
 
-### Install DOSBox
 ```bash
-# macOS
-brew install dosbox
+# Install DOSBox
+brew install dosbox          # macOS
+sudo apt install dosbox      # Ubuntu/Debian
 
-# Ubuntu/Debian
-sudo apt install dosbox
-
-# Windows
-# Download from https://www.dosbox.com/
-```
-
-### Install DOSCtl
-
-#### From PyPI (Recommended)
-```bash
+# Install DOSCtl
 pip install dosctl
 ```
 
-#### From GitHub (Development Version)
-Install the latest development version directly from GitHub:
+<details>
+<summary>Other install methods</summary>
+
 ```bash
+# From GitHub
 pip install git+https://github.com/xesco/dosctl.git
-```
 
-Or install a specific version/tag:
-```bash
-pip install git+https://github.com/xesco/dosctl.git@v1.1.0
-```
-
-For development with editable install:
-```bash
+# Development (editable)
 git clone https://github.com/xesco/dosctl.git
 cd dosctl
 pip install -e ".[dev]"
 ```
+</details>
 
 ## Getting Started
 
-1.  **List Games:** Find a game you want to play. The tool will automatically download the game list from the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the first run.
+1. **List games** — the game catalog downloads automatically on first run:
     ```bash
     dosctl list
     ```
-2.  **Search for a Game:** Narrow down the list with a search.
+2. **Search** for a game:
     ```bash
     dosctl search "Dune" --sort-by year
     ```
-3.  **Run a Game:** Run the game using its ID. The first time you run a game, `dosctl` will download and install it, then ask you to choose the correct executable.
+3. **Run** a game by its ID. On first run, `dosctl` downloads, installs, and asks you to pick the executable:
     ```bash
     dosctl run <game-id>
     ```
 
-## Core Concepts
-
-### Game IDs
-Every game in the collection is assigned a unique 8-character ID (a hash of its path). You use this ID for all operations like running, inspecting, or deleting games.
-
-### First-Time Run
-The first time you run a game, `dosctl` will prompt you to select the main executable file from a list of possibilities (`.exe`, `.com`, `.bat`). Your choice is remembered, so subsequent runs will launch the game immediately. You can force this selection again by using the `--configure` flag.
-
-### Command Parts
-You can specify exactly what DOS command to run by providing **command parts** after the game ID. This gives you fine-grained control over game execution:
-
-- **Without command parts:** `dosctl run <game-id>` uses the saved default executable
-- **With command parts:** `dosctl run <game-id> setup.exe -silent` runs the exact command you specify
-
-Command parts are joined with spaces to form the final DOS command. This is useful for:
-- Running different executables (setup, configuration tools, etc.)
-- Passing command-line arguments to games
-- Running batch files with parameters
-- Bypassing the saved default when needed
-
-**Examples:**
-```bash
-dosctl run 62ef2769 setup.exe          # Run setup instead of main game
-dosctl run 62ef2769 game.exe -debug     # Run with debug flag
-dosctl run 62ef2769 install.bat /q      # Run batch file quietly
-dosctl run 62ef2769 editor.exe level1   # Run level editor with specific level
-```
-
-## Usage Examples
-
-### List only your installed games
-```bash
-$ dosctl list -i
-Available Games:
-  [53ad2f67] (1991) Lemmings (1991)(Psygnosis Limited) [Strategy, Action]
-  [fdcc9602] (1990) Secret of Monkey Island, The (VGA) (1990)(Lucasfilm Games LLC) [Adventure]
-```
-
-### Search for a game
-```bash
-$ dosctl search "metal mutant"
-Found 5 game(s):
-  [dd228682] (1991) Metal Mutant (1991)(Silmarils) [Action, Adventure]
-  [55123659] (1991) Metal Mutant (1991)(Silmarils) [Codes]
-  [9a5aa0b6] (1991) Metal Mutant (Es) (1991)(Silmarils) [Action, Adventure]
-```
-
-### Run a game for the first time
-```bash
-$ dosctl run dd228682
-Downloading 'Metal Mutant (1991)(Silmarils) [Action, Adventure].zip'...
-✅ Successfully installed 'Metal Mutant (1991)(Silmarils) [Action, Adventure]'
-No default executable set for game 'dd228682'. Searching...
-Found a single executable: 'METAL.EXE'. Setting as default.
-Starting 'METAL.EXE' with DOSBox...
-```
-
-### Run a specific executable directly
-```bash
-$ dosctl run dd228682 setup.exe
-Starting 'SETUP.EXE' with DOSBox...
-```
-
-### Run with command-line arguments
-```bash
-$ dosctl run dd228682 game.exe -difficulty hard -level 3
-Starting 'GAME.EXE -DIFFICULTY HARD -LEVEL 3' with DOSBox...
-```
-
-### Run main executable with required parameters
-```bash
-$ dosctl run dd228682 metal.exe soundblaster
-Starting 'METAL.EXE SOUNDBLASTER' with DOSBox...
-```
-
-### Force reconfiguration of saved executable
-```bash
-$ dosctl run dd228682 --configure
-Please choose one of the following to run:
-  1: METAL.EXE
-  2: SETUP.EXE
-  3: README.BAT
-Select a file to execute: 2
-Starting 'SETUP.EXE' with DOSBox...
-```
-
-### Inspect game files
-```bash
-$ dosctl inspect dd228682
-Inspecting files for 'Metal Mutant (1991)(Silmarils) [Action, Adventure]' (ID: dd228682)
-Location: <dosctl-data-dir>/installed/dd228682
-----------------------------------------
-  METAL.EXE
-  SETUP.EXE
-  README.TXT
-  DATA/LEVELS.DAT
-  DATA/SOUNDS.DAT
-```
-
-### Show only executable files
-```bash
-$ dosctl inspect dd228682 --executables
-Inspecting files for 'Metal Mutant (1991)(Silmarils) [Action, Adventure]' (ID: dd228682)
-Location: <dosctl-data-dir>/installed/dd228682
-----------------------------------------
-Executable files:
-  METAL.EXE
-  SETUP.EXE
-```
-
 ## Commands
 
-*   `dosctl list`
-    *   Lists all available games.
-    *   `-s, --sort-by [name|year]`: Sort the list by name or year.
-    *   `-i, --installed`: Only show games that are currently installed.
+Every game has a unique 8-character ID (shown in `list`/`search` output). Use it for all operations.
 
-*   `dosctl search <query>`
-    *   Searches for games. The query is optional if `--year` is used.
-    *   `-y, --year <year>`: Filter by a specific year.
-    *   `-c, --case-sensitive`: Make the search case-sensitive.
-    *   `-s, --sort-by [name|year]`: Sort the results by name or year.
+### `dosctl list`
 
-*   `dosctl run <game-id> [command-parts...]`
-    *   Runs a game. Downloads and installs it if necessary.
-    *   Prompts for an executable on the first run.
-    *   **Command Parts:** You can specify the exact DOS command to run instead of using the saved default.
-    *   `-c, --configure`: Force the interactive executable selection menu to appear.
+Lists all available games.
 
-    **Examples:**
-    ```bash
-    dosctl run 62ef2769                    # Use saved/default executable
-    dosctl run 62ef2769 --configure        # Choose executable interactively
-    dosctl run 62ef2769 setup.exe          # Run specific executable
-    dosctl run 62ef2769 game.exe -level 5  # Run with command-line arguments
-    dosctl run 62ef2769 install.bat quiet  # Run batch file with parameters
-    ```
+| Flag | Description |
+|------|-------------|
+| `-s, --sort-by [name\|year]` | Sort by name or year |
+| `-i, --installed` | Only show installed games |
 
-*   `dosctl inspect <game-id>`
-    *   Shows the list of installed files for a game.
-    *   `-e, --executables`: Show only executable files (.exe, .com, .bat).
+### `dosctl search <query>`
 
-*   `dosctl delete <game-id>`
-    *   Deletes an installed game and its files.
+Searches for games. Query is optional if `--year` is used.
 
-*   `dosctl refresh --force`
-    *   Forces a re-download of the master game list from the Internet Archive.
+| Flag | Description |
+|------|-------------|
+| `-y, --year <year>` | Filter by year |
+| `-c, --case-sensitive` | Case-sensitive search |
+| `-s, --sort-by [name\|year]` | Sort by name or year |
+
+### `dosctl run <game-id> [command-parts...]`
+
+Runs a game. Downloads and installs it if needed. On first run, prompts for the main executable; the choice is saved for future runs.
+
+You can override the saved executable by passing command parts directly, or use `--configure` to re-pick interactively:
+
+```bash
+dosctl run 62ef2769                    # Use saved default
+dosctl run 62ef2769 --configure        # Re-pick executable interactively
+dosctl run 62ef2769 setup.exe          # Run a specific executable
+dosctl run 62ef2769 game.exe -level 5  # Pass arguments to the executable
+```
+
+### `dosctl inspect <game-id>`
+
+Shows installed files for a game. Use `-e, --executables` to show only `.exe`/`.com`/`.bat` files.
+
+### `dosctl delete <game-id>`
+
+Deletes an installed game and its downloaded archive.
+
+### `dosctl refresh --force`
+
+Re-downloads the master game list from the Internet Archive.
 
 ## Configuration
 
-`dosctl` stores its data in platform-appropriate directories following OS conventions.
+Data is stored in platform-appropriate directories:
 
-### File Locations
-
-**Linux & macOS:**
 ```
-~/.local/share/dosctl/
-├── downloads/         # Downloaded game archives (.zip files)
-├── installed/         # Extracted and installed games
-├── collections/       # Game collection metadata cache
-├── current_session.json
-└── installations.json
+~/.local/share/dosctl/          # Linux/macOS
+%USERPROFILE%\AppData\Local\dosctl\   # Windows
+  downloads/       # Downloaded .zip archives
+  installed/       # Extracted games
+  collections/     # Game list cache
 ```
-
-**Windows:**
-```
-%USERPROFILE%\AppData\Local\dosctl\
-├── downloads\         # Downloaded game archives (.zip files)
-├── installed\         # Extracted and installed games
-├── collections\       # Game collection metadata cache
-├── current_session.json
-└── installations.json
-```
-
-**Examples:**
-- Linux: `/home/username/.local/share/dosctl/`
-- macOS: `/Users/username/.local/share/dosctl/`
-- Windows: `C:\Users\username\AppData\Local\dosctl\`
-
-### Storage Requirements
-
-- **downloads/**: Game archives (typically 1-50 MB each)
-- **installed/**: Extracted games (typically 2-100 MB each)
-- **collections/**: Metadata cache (~5 MB)
-
-Plan for several GB of storage if you install many games.
 
 ## Collection Backend
 
-By default, `dosctl` uses the [**Total DOS Collection Release 14**](https://archive.org/details/Total_DOS_Collection_Release_14) from the Internet Archive as its game collection source. This comprehensive collection contains thousands of DOS games from the 1980s and 1990s, all ready to download and play.
+Games are sourced from the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive. The catalog is downloaded on first use; individual games are downloaded on demand when you run them.
 
-The collection includes:
-- Classic DOS games from various genres (adventure, action, strategy, RPG, etc.)
-- Games from major publishers like LucasArts, Sierra, id Software, and many others
-- Both well-known titles and obscure gems
-- Games in their original format, preserved for historical accuracy
+## Disclaimer
 
-When you first run `dosctl list` or `dosctl search`, the tool will automatically download the complete game catalog from this collection. The games themselves are downloaded individually only when you choose to run them.
+This tool does not host or distribute any games — it manages content from external sources. You are responsible for ensuring you have legal rights to any content you use. Windows support is experimental; Linux and macOS are the primary platforms.
 
-## ⚠️ Important Legal Disclaimer
-
-**Use at Your Own Risk**: This software is provided "as is" without any warranty. You are solely responsible for your actions when using this tool.
-
-**Content Responsibility**: This tool does not host or distribute any games. It only helps manage content you legally obtain elsewhere. You are responsible for:
-- Ensuring you have legal rights to any games you manage
-- Respecting copyright laws and software licenses
-- Any legal consequences of your usage
-
-**No Liability**: The author is not responsible for copyright infringement or any damages arising from use of this software.
-
-**Legal Compliance**: Ensure you have proper legal rights to any games or software you manage with this tool. Respect copyright laws and software licenses.
-
-## ⚠️ Windows Support Notice
-
-Windows support is currently **experimental**. While the core functionality should work, it has not been extensively tested on Windows systems. Linux and macOS are the primary supported platforms.
-
-If you encounter issues on Windows, please report them on GitHub. Contributions to improve Windows compatibility are welcome!
+See [LICENSE](LICENSE) for the full MIT license.
