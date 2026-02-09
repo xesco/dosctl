@@ -16,7 +16,7 @@ def delete(collection, game_id):
         click.echo(f"Error: Game with ID '{game_id}' is not installed.", err=True)
         return
 
-    game = collection._find_game(game_id)
+    game = collection.find_game(game_id)
     game_name = game['name'] if game else f"Game ID {game_id}"
     downloaded_zip = DOWNLOADS_DIR / f"{game_name}.zip"
 

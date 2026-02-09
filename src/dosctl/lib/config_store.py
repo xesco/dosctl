@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Optional
 from dosctl.config import CONFIG_DIR
 
 CONFIG_FILE = CONFIG_DIR / "run_config.json"
@@ -27,12 +28,12 @@ def save_run_config(config: dict) -> None:
         # Handle write errors gracefully
         print(f"Warning: Could not save configuration: {e}")
 
-def get_game_command(game_id: str) -> str | None:
+def get_game_command(game_id: str) -> Optional[str]:
     """Gets the saved command for a specific game."""
     config = load_run_config()
     return config.get(game_id)
 
-def set_game_command(game_id: str, command: str | None) -> None:
+def set_game_command(game_id: str, command: Optional[str]) -> None:
     """Saves the chosen command for a specific game. If command is None, removes the entry."""
     config = load_run_config()
 

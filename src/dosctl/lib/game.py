@@ -8,7 +8,7 @@ def install_game(collection, game_id):
     Returns the game object and the installation path.
     """
     # Find the game in the collection
-    game = collection._find_game(game_id)
+    game = collection.find_game(game_id)
     if not game:
         raise FileNotFoundError(f"Game with ID '{game_id}' not found.")
 

@@ -135,11 +135,11 @@ class TestArchiveOrgCollection:
                 {"id": "abc12345", "name": "Test Game", "year": "1990", "full_path": "test.zip"}
             ]
             
-            game = collection._find_game("abc12345")
+            game = collection.find_game("abc12345")
             assert game is not None
             assert game["name"] == "Test Game"
             
-            game = collection._find_game("notfound")
+            game = collection.find_game("notfound")
             assert game is None
 
 

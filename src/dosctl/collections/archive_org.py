@@ -37,7 +37,7 @@ class ArchiveOrgCollection(BaseCollection):
         if force_refresh or not cache_file.exists():
             print(f"Downloading game list from {self.source}...")
             headers = {'User-Agent': 'Mozilla/5.0'}
-            response = requests.get(self.source, headers=headers)
+            response = requests.get(self.source, headers=headers, timeout=30)
             response.raise_for_status()
             with open(cache_file, "w", encoding="utf-8") as f:
                 f.write(response.text)
@@ -99,7 +99,7 @@ class ArchiveOrgCollection(BaseCollection):
             self._populate_games_data()
         return self._games_data
 
-    def _find_game(self, game_id: str) -> Optional[Dict]:
+    def find_game(self, game_id: str) -> Optional[Dict]:
         if not self._games_data:
             self._populate_games_data()
         for game in self._games_data:
@@ -112,7 +112,7 @@ class ArchiveOrgCollection(BaseCollection):
         Constructs the download URL for a specific game.
         Can be overridden by subclasses for different URL patterns.
         """
-        game = self._find_game(game_id)
+        game = self.find_game(game_id)
         if not game:
             return None
 
@@ -131,7 +131,7 @@ class ArchiveOrgCollection(BaseCollection):
         if not download_url:
             raise FileNotFoundError(f"Game with ID '{game_id}' not found.")
 
-        game = self._find_game(game_id)
+        game = self.find_game(game_id)
         destination_path = Path(destination)
         destination_path.mkdir(parents=True, exist_ok=True)
 
@@ -146,7 +146,7 @@ class ArchiveOrgCollection(BaseCollection):
 
         # Use a try...except block for more specific error handling
         try:
-            with requests.get(download_url, headers=headers, stream=True) as r:
+            with requests.get(download_url, headers=headers, stream=True, timeout=30) as r:
                 r.raise_for_status()
 
                 total_size = int(r.headers.get('content-length', 0))
@@ -172,7 +172,7 @@ class ArchiveOrgCollection(BaseCollection):
         """
         Unzips a downloaded game to a specified installation directory.
         """
-        game = self._find_game(game_id)
+        game = self.find_game(game_id)
         if not game:
             raise FileNotFoundError(f"Game with ID '{game_id}' not found.")
 

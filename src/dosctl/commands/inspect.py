@@ -16,7 +16,7 @@ def inspect(collection, game_id, executables):
         click.echo(f"Error: Game with ID '{game_id}' is not installed.", err=True)
         return
 
-    game = collection._find_game(game_id)
+    game = collection.find_game(game_id)
     game_name = game['name'] if game else "Unknown Game"
 
     click.echo(f"Inspecting files for '{game_name}' (ID: {game_id})")

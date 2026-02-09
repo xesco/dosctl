@@ -1,6 +1,6 @@
 from functools import wraps
 import click
-from dosctl.collections.archive_org import TotalDOSCollectionRelease14
+from dosctl.collections.factory import create_collection
 from dosctl.config import DEFAULT_COLLECTION_SOURCE, COLLECTION_CACHE_DIR, ensure_dirs_exist
 
 def ensure_cache(f):
@@ -11,7 +11,8 @@ def ensure_cache(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         ensure_dirs_exist()
-        collection = TotalDOSCollectionRelease14(
+        collection = create_collection(
+            "tdc_release_14",
             source=DEFAULT_COLLECTION_SOURCE,
             cache_dir=COLLECTION_CACHE_DIR
         )

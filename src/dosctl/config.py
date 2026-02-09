@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from .lib.platform import get_platform
 
@@ -26,9 +27,8 @@ def ensure_dirs_exist():
         COLLECTION_CACHE_DIR.mkdir(parents=True, exist_ok=True)
         DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
         INSTALLED_DIR.mkdir(parents=True, exist_ok=True)
-    except PermissionError:
-        # Handle permission errors gracefully
-        pass
+    except PermissionError as e:
+        print(f"Warning: Could not create directories: {e}", file=sys.stderr)
 
 # Backward compatibility functions for ui.py
 def get_dosctl_config_dir() -> str:
