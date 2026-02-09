@@ -35,7 +35,22 @@ class StandardDOSBoxLauncher(DOSBoxLauncher):
         else:
             cmd.extend(['-c', 'C:'])
 
-        cmd.extend(['-c', command])
+        # Convert forward slashes to backslashes for DOS path compatibility
+        # (DOS uses / as the switch character, not a path separator)
+        dos_command = command.replace('/', '\\')
+
+        # If the command references a subdirectory, cd into it first
+        # so the game can find its data files via relative paths
+        if '\\' in dos_command.split()[0]:
+            parts = dos_command.split()[0].rsplit('\\', 1)
+            subdir = parts[0]
+            exe_name = parts[1]
+            # Rebuild command with just the executable name + any original arguments
+            args = dos_command.split()[1:]
+            dos_command = ' '.join([exe_name] + args)
+            cmd.extend(['-c', f'CD {subdir}'])
+
+        cmd.extend(['-c', dos_command])
 
         # Add platform-specific options
         if options.get('exit_on_completion', False):
