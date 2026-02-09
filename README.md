@@ -98,9 +98,13 @@ Re-downloads the master game list from the Internet Archive.
 
 Data is stored in platform-appropriate directories:
 
+| Platform | Base directory |
+|----------|---------------|
+| Linux/macOS | `~/.local/share/dosctl/` |
+| Windows | `%USERPROFILE%\AppData\Local\dosctl\` |
+
 ```
-~/.local/share/dosctl/          # Linux/macOS
-%USERPROFILE%\AppData\Local\dosctl\   # Windows
+<base-dir>/
   downloads/       # Downloaded .zip archives
   installed/       # Extracted games
   collections/     # Game list cache
