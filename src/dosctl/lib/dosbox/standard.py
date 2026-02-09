@@ -26,9 +26,16 @@ class StandardDOSBoxLauncher(DOSBoxLauncher):
         cmd = [
             executable,
             '-c', mount_cmd,
-            '-c', 'C:',
-            '-c', command
         ]
+
+        # Floppy mode: also mount as A: and start there
+        if options.get('floppy', False):
+            mount_a_cmd = self.platform.format_dosbox_mount_command('A', game_path)
+            cmd.extend(['-c', mount_a_cmd, '-c', 'A:'])
+        else:
+            cmd.extend(['-c', 'C:'])
+
+        cmd.extend(['-c', command])
 
         # Add platform-specific options
         if options.get('exit_on_completion', False):

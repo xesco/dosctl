@@ -12,8 +12,9 @@ from dosctl.lib.dosbox import get_dosbox_launcher
 @click.argument('game_id')
 @click.argument('command_parts', nargs=-1)
 @click.option('-c', '--configure', is_flag=True, default=False, help='Force re-selection of the default executable.')
+@click.option('-a', '--floppy', is_flag=True, default=False, help='Also mount game directory as A: drive and start there. Useful for floppy-based installers.')
 @ensure_cache
-def run(collection, game_id, command_parts, configure):
+def run(collection, game_id, command_parts, configure, floppy):
     """
     Runs a game. Prompts for an executable on the first run or when --configure is used.
     """
@@ -41,6 +42,12 @@ def run(collection, game_id, command_parts, configure):
         # Determine the command to run
         chosen_command_str = _get_or_prompt_command(game_id, game_install_path, command_parts, configure)
         if not chosen_command_str:
+            return
+
+        if floppy:
+            # Floppy mode: skip saving default and executable validation
+            # (the command may reference floppy paths or drive letters)
+            _launch_game(game_install_path, chosen_command_str, floppy=True)
             return
 
         # Save the chosen command for future runs
@@ -104,7 +111,7 @@ def _prompt_for_executable(game_install_path, force_menu=False):
         else:
             click.echo("Invalid choice. Please try again.", err=True)
 
-def _launch_game(game_install_path, chosen_command_str):
+def _launch_game(game_install_path, chosen_command_str, floppy=False):
     """Launch the game with DOSBox."""
     click.echo(f"Starting '{chosen_command_str.upper()}' with DOSBox...")
 
@@ -114,7 +121,8 @@ def _launch_game(game_install_path, chosen_command_str):
         launcher.launch_game(
             game_path=game_install_path,
             command=chosen_command_str,
-            exit_on_completion=True  # This matches the previous -c exit behavior
+            exit_on_completion=True,
+            floppy=floppy
         )
     except RuntimeError as e:
         click.echo(f"Error: {e}", err=True)

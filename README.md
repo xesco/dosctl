@@ -82,6 +82,13 @@ dosctl run 62ef2769 setup.exe          # Run a specific executable
 dosctl run 62ef2769 game.exe -level 5  # Pass arguments to the executable
 ```
 
+Some games include floppy-based installers that expect source files on A: and install to C:. Use `-a` to mount the game directory as both drives:
+
+```bash
+dosctl run 62ef2769 install.bat C: -a  # Run installer with floppy mode
+dosctl run 62ef2769 STARCON2\GAME.EXE  # Then run the installed game normally
+```
+
 ### `dosctl inspect <game-id>`
 
 Shows installed files for a game. Use `-e, --executables` to show only `.exe`/`.com`/`.bat` files.
