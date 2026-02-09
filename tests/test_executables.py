@@ -86,10 +86,10 @@ class TestFindExecutables:
 
             executables = find_executables(temp_path)
 
-            # Should find both executables (recursive search)
+            # Should find both executables with relative paths
             assert len(executables) == 2
             assert "main.exe" in executables
-            assert "sub.exe" in executables
+            assert "subdir/sub.exe" in executables
 
 
 class TestExecutableExists:

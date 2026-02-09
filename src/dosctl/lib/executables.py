@@ -20,7 +20,7 @@ def find_executables(game_path: Path) -> List[str]:
         ]
 
         for pattern in patterns:
-            executables.extend([e.name for e in game_path.glob(pattern)])
+            executables.extend([str(e.relative_to(game_path)) for e in game_path.glob(pattern)])
 
     # Remove duplicates while preserving order
     seen = set()
