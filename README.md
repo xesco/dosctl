@@ -22,10 +22,10 @@ pip install dosctl
 
 ```bash
 # From GitHub
-pip install git+https://github.com/xesco/dosctl.git
+pip install git+ssh://git@github.com/xesco/dosctl.git
 
 # Development (editable)
-git clone https://github.com/xesco/dosctl.git
+git clone git@github.com:xesco/dosctl.git
 cd dosctl
 pip install -e ".[dev]"
 ```
