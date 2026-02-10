@@ -214,6 +214,19 @@ _SIZES = ['dwarf', 'giant', 'super giant']
 
 
 def _build_stars():
+    """Decode _RAW game data into star records.
+
+    Each _RAW entry is [x*10, y*10, size, color, _, prefix, name]:
+      [0] x coordinate * 10    (6500 -> 650.0)
+      [1] y coordinate * 10    (2458 -> 245.8)
+      [2] size index           (0=dwarf, 1=giant, 2=super giant)
+      [3] color index          (0=blue, 1=green, 2=orange, 3=red, 4=white, 5=yellow)
+      [4] (unused)
+      [5] prefix index         (0=None, 1=Alpha, 2=Beta, ... 6=Zeta, ...)
+      [6] name index           (index into _NAMES)
+
+    Example: [6500,2458,0,3,0,6,12] -> (650.0, 245.8, "Zeta Brahe", "red", "dwarf")
+    """
     stars = []
     for entry in _RAW:
         x, y = entry[0] / 10.0, entry[1] / 10.0
