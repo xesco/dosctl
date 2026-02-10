@@ -14,7 +14,7 @@ from dosctl.lib.dosbox import get_dosbox_launcher
 @click.option('-c', '--configure', is_flag=True, default=False, help='Force re-selection of the default executable.')
 @click.option('-a', '--floppy', is_flag=True, default=False, help='Also mount game directory as A: drive and start there. Useful for floppy-based installers.')
 @ensure_cache
-def run(collection, game_id, command_parts, configure, floppy):
+def play(collection, game_id, command_parts, configure, floppy):
     """
     Runs a game. Prompts for an executable on the first run or when --configure is used.
     """

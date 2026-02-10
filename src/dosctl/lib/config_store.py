@@ -3,10 +3,17 @@ from pathlib import Path
 from typing import Optional
 from dosctl.config import CONFIG_DIR
 
-CONFIG_FILE = CONFIG_DIR / "run_config.json"
+CONFIG_FILE = CONFIG_DIR / "play_config.json"
+OLD_CONFIG_FILE = CONFIG_DIR / "run_config.json"
 
-def load_run_config() -> dict:
+def _migrate_config():
+    """Migrate old run_config.json to play_config.json if needed."""
+    if OLD_CONFIG_FILE.exists() and not CONFIG_FILE.exists():
+        OLD_CONFIG_FILE.rename(CONFIG_FILE)
+
+def load_play_config() -> dict:
     """Loads the executable configuration file."""
+    _migrate_config()
     if not CONFIG_FILE.exists():
         return {}
     try:
@@ -16,7 +23,7 @@ def load_run_config() -> dict:
         # If the file is corrupted or unreadable, treat it as empty
         return {}
 
-def save_run_config(config: dict) -> None:
+def save_play_config(config: dict) -> None:
     """Saves the executable configuration file."""
     # Ensure the config directory exists
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -30,16 +37,16 @@ def save_run_config(config: dict) -> None:
 
 def get_game_command(game_id: str) -> Optional[str]:
     """Gets the saved command for a specific game."""
-    config = load_run_config()
+    config = load_play_config()
     return config.get(game_id)
 
 def set_game_command(game_id: str, command: Optional[str]) -> None:
     """Saves the chosen command for a specific game. If command is None, removes the entry."""
-    config = load_run_config()
+    config = load_play_config()
 
     if command is None:
         config.pop(game_id, None)  # Remove entry if exists
     else:
         config[game_id] = command
 
-    save_run_config(config)
+    save_play_config(config)

@@ -41,9 +41,9 @@ pip install -e ".[dev]"
     ```bash
     dosctl search "Dune" --sort-by year
     ```
-3. **Run** a game by its ID. On first run, `dosctl` downloads, installs, and asks you to pick the executable:
+3. **Play** a game by its ID. On first run, `dosctl` downloads, installs, and asks you to pick the executable:
     ```bash
-    dosctl run <game-id>
+    dosctl play <game-id>
     ```
 
 ## Commands
@@ -69,24 +69,24 @@ Searches for games. Query is optional if `--year` is used.
 | `-c, --case-sensitive` | Case-sensitive search |
 | `-s, --sort-by [name\|year]` | Sort by name or year |
 
-### `dosctl run <game-id> [command-parts...]`
+### `dosctl play <game-id> [command-parts...]`
 
 Runs a game. Downloads and installs it if needed. On first run, prompts for the main executable; the choice is saved for future runs.
 
 You can override the saved executable by passing command parts directly, or use `--configure` to re-pick interactively:
 
 ```bash
-dosctl run 62ef2769                    # Use saved default
-dosctl run 62ef2769 --configure        # Re-pick executable interactively
-dosctl run 62ef2769 setup.exe          # Run a specific executable
-dosctl run 62ef2769 game.exe -level 5  # Pass arguments to the executable
+dosctl play 62ef2769                    # Use saved default
+dosctl play 62ef2769 --configure        # Re-pick executable interactively
+dosctl play 62ef2769 setup.exe          # Run a specific executable
+dosctl play 62ef2769 game.exe -level 5  # Pass arguments to the executable
 ```
 
 Some games include floppy-based installers that expect source files on A: and install to C:. Use `-a` to mount the game directory as both drives:
 
 ```bash
-dosctl run 62ef2769 install.bat C: -a  # Run installer with floppy mode
-dosctl run 62ef2769 STARCON2/GAME.EXE  # Then run the installed game normally
+dosctl play 62ef2769 install.bat C: -a  # Run installer with floppy mode
+dosctl play 62ef2769 STARCON2/GAME.EXE  # Then run the installed game normally
 ```
 
 ### `dosctl inspect <game-id>`
