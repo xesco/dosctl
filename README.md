@@ -86,7 +86,7 @@ Some games include floppy-based installers that expect source files on A: and in
 
 ```bash
 dosctl run 62ef2769 install.bat C: -a  # Run installer with floppy mode
-dosctl run 62ef2769 STARCON2\GAME.EXE  # Then run the installed game normally
+dosctl run 62ef2769 STARCON2/GAME.EXE  # Then run the installed game normally
 ```
 
 ### `dosctl inspect <game-id>`
