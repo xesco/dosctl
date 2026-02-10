@@ -1,3 +1,3 @@
 """DOSCtl - A command-line tool to manage and play DOS games."""
 
-__version__ = "1.2.1"
+__version__ = "1.3.0"
