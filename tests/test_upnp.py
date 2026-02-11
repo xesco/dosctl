@@ -1,6 +1,9 @@
 """Tests for UPnP port mapping."""
 
 from unittest.mock import patch, MagicMock, call
+from urllib.error import HTTPError
+from email.message import Message
+from io import BytesIO
 from dosctl.lib.upnp import UPnPPortMapper, UPnPError
 
 import pytest
@@ -191,6 +194,74 @@ class TestPortMapping:
         mapper = UPnPPortMapper()
         result = mapper.delete_port_mapping(19900)
         assert result is False
+
+    @patch("dosctl.lib.upnp.urlopen")
+    def test_add_port_mapping_retries_with_zero_lease(self, mock_urlopen):
+        """Should retry with lease_duration=0 when first attempt fails."""
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"<ok/>"
+        # First call fails, second succeeds
+        mock_urlopen.side_effect = [Exception("lease rejected"), mock_response]
+
+        mapper = self._create_discovered_mapper()
+        result = mapper.add_port_mapping(19900, "192.168.1.42")
+
+        assert result is True
+        assert mock_urlopen.call_count == 2
+        # Second call should have lease_duration=0
+        second_req = mock_urlopen.call_args_list[1][0][0]
+        body = second_req.data.decode("utf-8")
+        assert "<NewLeaseDuration>0</NewLeaseDuration>" in body
+
+    @patch("dosctl.lib.upnp.urlopen")
+    def test_add_port_mapping_no_retry_when_lease_zero(self, mock_urlopen):
+        """Should not retry when lease_duration is already 0."""
+        mock_urlopen.side_effect = Exception("mapping rejected")
+
+        mapper = self._create_discovered_mapper()
+        result = mapper.add_port_mapping(19900, "192.168.1.42", lease_duration=0)
+
+        assert result is False
+        assert mock_urlopen.call_count == 1
+
+    @patch("dosctl.lib.upnp.urlopen")
+    def test_add_port_mapping_stores_last_error(self, mock_urlopen):
+        """Should store the last error for diagnostic purposes."""
+        mock_urlopen.side_effect = Exception("some SOAP fault")
+
+        mapper = self._create_discovered_mapper()
+        result = mapper.add_port_mapping(19900, "192.168.1.42")
+
+        assert result is False
+        assert mapper._last_error is not None
+
+    @patch("dosctl.lib.upnp.urlopen")
+    def test_soap_fault_parsing(self, mock_urlopen):
+        """Should parse SOAP fault details from HTTP 500 responses."""
+        fault_xml = (
+            '<?xml version="1.0"?>'
+            '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">'
+            "<s:Body><s:Fault><detail>"
+            "<UPnPError><errorCode>718</errorCode>"
+            "<errorDescription>ConflictInMappingEntry</errorDescription>"
+            "</UPnPError></detail></s:Fault></s:Body></s:Envelope>"
+        )
+        exc = HTTPError(
+            url="http://192.168.1.1/control",
+            code=500,
+            msg="Internal Server Error",
+            hdrs=Message(),
+            fp=BytesIO(fault_xml.encode()),
+        )
+        mock_urlopen.side_effect = exc
+
+        mapper = self._create_discovered_mapper()
+        result = mapper.add_port_mapping(19900, "192.168.1.42", lease_duration=0)
+
+        assert result is False
+        assert mapper._last_error is not None
+        error_msg = str(mapper._last_error)
+        assert "ConflictInMappingEntry" in error_msg
 
 
 class TestGetExternalIP:

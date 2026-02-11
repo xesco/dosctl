@@ -122,8 +122,11 @@ def _setup_internet_hosting(port, game_id, public_ip=None, no_upnp=False):
                             f"(UDP port {port}). It may still work.",
                         )
                 else:
+                    detail = ""
+                    if mapper._last_error:
+                        detail = " ({})".format(mapper._last_error)
                     click.echo(
-                        f"UPnP: Could not open port. You may need to manually "
+                        f"UPnP: Could not open port{detail}. You may need to manually "
                         f"forward UDP port {port} to {local_ip or 'your machine'} "
                         f"on your router.",
                         err=True,

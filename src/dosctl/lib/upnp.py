@@ -21,6 +21,7 @@ from typing import Optional
 
 # Python 2/3 compat is not needed (>=3.8) but keep imports clean
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 from urllib.parse import urljoin, urlparse
 
 from xml.etree import ElementTree as ET
@@ -115,6 +116,7 @@ class UPnPPortMapper(object):
         self._control_url = None  # type: Optional[str]
         self._service_type = None  # type: Optional[str]
         self._registered_mappings = []  # type: list
+        self._last_error = None  # type: Optional[Exception]
 
     def discover_gateway(self, timeout=3.0):
         """Discover a UPnP IGD gateway on the local network.
@@ -146,6 +148,10 @@ class UPnPPortMapper(object):
     ):
         """Add a port mapping on the gateway.
 
+        Tries the given lease_duration first. If the router rejects it,
+        retries once with lease_duration=0 (permanent / router-managed),
+        which some gateways require.
+
         Args:
             external_port: External port number to map.
             internal_ip: LAN IP of this machine.
@@ -166,22 +172,31 @@ class UPnPPortMapper(object):
         if internal_port is None:
             internal_port = external_port
 
-        body = _ADD_PORT_MAPPING_BODY.format(
-            service_type=self._service_type,
-            external_port=external_port,
-            protocol=protocol,
-            internal_port=internal_port,
-            internal_ip=internal_ip,
-            description=description,
-            lease_duration=lease_duration,
-        )
+        durations = [lease_duration]
+        if lease_duration != 0:
+            durations.append(0)
 
-        try:
-            self._soap_request("AddPortMapping", body)
-            self._registered_mappings.append((external_port, protocol))
-            return True
-        except Exception:
-            return False
+        last_error = None
+        for duration in durations:
+            body = _ADD_PORT_MAPPING_BODY.format(
+                service_type=self._service_type,
+                external_port=external_port,
+                protocol=protocol,
+                internal_port=internal_port,
+                internal_ip=internal_ip,
+                description=description,
+                lease_duration=duration,
+            )
+
+            try:
+                self._soap_request("AddPortMapping", body)
+                self._registered_mappings.append((external_port, protocol))
+                return True
+            except Exception as exc:
+                last_error = exc
+
+        self._last_error = last_error
+        return False
 
     def delete_port_mapping(self, external_port, protocol="UDP"):
         """Remove a port mapping from the gateway.
@@ -391,6 +406,9 @@ class UPnPPortMapper(object):
 
         Returns:
             Response body as string.
+
+        Raises:
+            UPnPError: With SOAP fault detail if the router returns an error.
         """
         envelope = _SOAP_ENVELOPE.format(body=body)
         soap_action = '"{service_type}#{action}"'.format(
@@ -403,7 +421,31 @@ class UPnPPortMapper(object):
         req.add_header("SOAPAction", soap_action)
         req.add_header("User-Agent", "dosctl UPnP/1.0")
 
-        response = urlopen(req, timeout=5)
-        result = response.read().decode("utf-8", errors="replace")
-        response.close()
-        return result
+        try:
+            response = urlopen(req, timeout=5)
+            result = response.read().decode("utf-8", errors="replace")
+            response.close()
+            return result
+        except HTTPError as exc:
+            # UPnP SOAP faults come as HTTP 500 with an XML body
+            detail = ""
+            try:
+                fault_body = exc.read().decode("utf-8", errors="replace")
+                root = ET.fromstring(fault_body)
+                for elem in root.iter():
+                    if elem.tag.endswith("errorDescription") and elem.text:
+                        detail = elem.text.strip()
+                        break
+                if not detail:
+                    for elem in root.iter():
+                        if elem.tag.endswith("errorCode") and elem.text:
+                            detail = "error code " + elem.text.strip()
+                            break
+            except Exception:
+                pass
+            msg = "SOAP {action} failed (HTTP {code})".format(
+                action=action, code=exc.code
+            )
+            if detail:
+                msg += ": " + detail
+            raise UPnPError(msg) from exc
