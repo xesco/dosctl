@@ -76,11 +76,11 @@ class TestIntegration:
 
     def test_collection_game_search_workflow(self):
         """Test searching for games in a collection."""
-        mock_content = '''
-        <a href="Doom%20(1993)(id%20Software).zip">Doom (1993)(id Software).zip</a>
-        <a href="Quake%20(1996)(id%20Software).zip">Quake (1996)(id Software).zip</a>
-        <a href="Wolfenstein%203D%20(1992)(id%20Software).zip">Wolfenstein 3D (1992)(id Software).zip</a>
-        '''
+        mock_content = (
+            "b1500715\tDoom (1993)(id Software)\t1993\tDoom (1993)(id Software).zip\n"
+            "4b06cb44\tQuake (1996)(id Software)\t1996\tQuake (1996)(id Software).zip\n"
+            "5806aa95\tWolfenstein 3D (1992)(id Software)\t1992\tWolfenstein 3D (1992)(id Software).zip\n"
+        )
 
         with tempfile.TemporaryDirectory() as temp_dir:
             cache_file = Path(temp_dir) / "games.txt"
@@ -125,15 +125,15 @@ class TestIntegration:
             # Mock successful HTTP request
             with patch('requests.get') as mock_get:
                 mock_response = Mock()
-                mock_response.text = "<a href='game.zip'>game.zip</a>"
+                mock_response.text = '<a href="game.zip">game.zip</a>'
                 mock_response.raise_for_status = Mock()
                 mock_get.return_value = mock_response
 
                 collection.ensure_cache_is_present()
 
-                # Cache should now exist
+                # Cache should now exist as TSV
                 assert cache_file.exists()
-                assert cache_file.read_text() == "<a href='game.zip'>game.zip</a>"
+                assert cache_file.read_text() == "c115c36d\tgame\t\tgame.zip\n"
 
     def test_error_handling_workflow(self):
         """Test various error conditions."""
@@ -160,9 +160,7 @@ class TestIntegration:
 
     def test_game_data_persistence(self):
         """Test that game data persists across operations."""
-        mock_content = '''
-        <a href="TestGame%20(1990).zip">TestGame (1990).zip</a>
-        '''
+        mock_content = "32113e9e\tTestGame (1990)\t1990\tTestGame (1990).zip\n"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             cache_file = Path(temp_dir) / "games.txt"
@@ -184,7 +182,7 @@ class TestIntegration:
             game = games[0]
             assert game["name"] == "TestGame (1990)"
             assert game["year"] == "1990"
-            assert len(game["id"]) == 8  # SHA1 hash truncated to 8 chars
+            assert game["id"] == "32113e9e"
 
     def test_collection_download_integration(self):
         """Test collection download functionality."""

@@ -52,22 +52,22 @@ class TestArchiveOrgCollection:
     def test_ensure_cache_is_present_downloads_when_missing(self, mock_get):
         """Test that cache is downloaded when missing."""
         mock_response = Mock()
-        mock_response.text = "mock game list content"
+        mock_response.text = '<a href="Game1%20(1990).zip">Game1 (1990).zip</a>'
         mock_response.raise_for_status = Mock()
         mock_get.return_value = mock_response
-        
+
         with tempfile.TemporaryDirectory() as temp_dir:
             collection = TotalDOSCollectionRelease14(
                 source="https://example.com/collection",
                 cache_dir=temp_dir
             )
-            
+
             collection.ensure_cache_is_present()
-            
-            # Check that the cache file was created
+
+            # Check that the cache file was created as TSV
             cache_file = Path(temp_dir) / "games.txt"
             assert cache_file.exists()
-            assert cache_file.read_text() == "mock game list content"
+            assert cache_file.read_text() == "18800512\tGame1 (1990)\t1990\tGame1 (1990).zip\n"
 
     def test_ensure_cache_is_present_skips_when_exists(self):
         """Test that cache download is skipped when file exists."""
@@ -98,29 +98,26 @@ class TestArchiveOrgCollection:
 
     def test_populate_games_data(self):
         """Test game data population from cache."""
-        mock_content = '''
-        <a href="Game1%20(1990).zip">Game1 (1990).zip</a>
-        <a href="Game2%20(1995).zip">Game2 (1995).zip</a>
-        '''
-        
+        mock_content = "18800512\tGame1 (1990)\t1990\tGame1 (1990).zip\n20210409\tGame2 (1995)\t1995\tGame2 (1995).zip\n"
+
         with tempfile.TemporaryDirectory() as temp_dir:
             cache_file = Path(temp_dir) / "games.txt"
             cache_file.write_text(mock_content)
-            
+
             collection = TotalDOSCollectionRelease14(
                 source="https://example.com/collection",
                 cache_dir=temp_dir
             )
-            
+
             collection._populate_games_data()
-            
+
             assert len(collection._games_data) == 2
-            
+
             game1 = collection._games_data[0]
             assert game1["name"] == "Game1 (1990)"
             assert game1["year"] == "1990"
             assert game1["full_path"] == "Game1 (1990).zip"
-            assert len(game1["id"]) == 8  # SHA1 hash truncated to 8 chars
+            assert game1["id"] == "18800512"
 
     def test_find_game(self):
         """Test finding a game by ID."""

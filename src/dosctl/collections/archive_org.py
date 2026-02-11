@@ -39,9 +39,26 @@ class ArchiveOrgCollection(BaseCollection):
             headers = {'User-Agent': 'Mozilla/5.0'}
             response = requests.get(self.source, headers=headers, timeout=30)
             response.raise_for_status()
-            with open(cache_file, "w", encoding="utf-8") as f:
-                f.write(response.text)
+            self._build_games_cache(response.text, cache_file)
             print("✅ Game list refreshed successfully.")
+
+    def _build_games_cache(self, html_content: str, cache_file: Path) -> None:
+        """
+        Parses HTML content from Archive.org and writes a pre-parsed TSV cache file.
+        Each line: id<TAB>name<TAB>year<TAB>full_path
+        """
+        zip_hrefs = re.findall(r'href="(.+?\.zip)"', html_content)
+
+        with open(cache_file, "w", encoding="utf-8") as f:
+            for href in zip_hrefs:
+                encoded_path = href.split("/")[-1]
+                full_path = unquote(encoded_path)
+                filename_with_ext = Path(full_path).name
+                parsed_details = self._parse_filename(filename_with_ext)
+                game_hash = hashlib.sha1(full_path.encode()).hexdigest()
+                game_id = game_hash[:8]
+                year = parsed_details["year"] or ""
+                f.write(f"{game_id}\t{parsed_details['name']}\t{year}\t{full_path}\n")
 
     def load(self, force_refresh: bool = False) -> None:
         self.ensure_cache_is_present(force_refresh=force_refresh)
@@ -69,30 +86,20 @@ class ArchiveOrgCollection(BaseCollection):
 
         self._games_data = []
         with open(cache_file, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        zip_hrefs = re.findall(r'href="(.+?\.zip)"', content)
-
-        for href in zip_hrefs:
-            encoded_path = href.split("/")[-1]
-            full_path = unquote(encoded_path)
-
-            filename_with_ext = Path(full_path).name
-
-            # Use the parser (can be overridden by subclasses)
-            parsed_details = self._parse_filename(filename_with_ext)
-
-            # The game's unique ID is a short, stable hash of its full path.
-            # This prevents collisions and ensures the ID is always the same.
-            game_hash = hashlib.sha1(full_path.encode()).hexdigest()
-            game_id = game_hash[:8]
-
-            self._games_data.append({
-                "id": game_id,
-                "name": parsed_details["name"],
-                "year": parsed_details["year"],
-                "full_path": full_path,
-            })
+            for line in f:
+                line = line.rstrip("\n")
+                if not line:
+                    continue
+                parts = line.split("\t")
+                if len(parts) != 4:
+                    continue
+                game_id, name, year, full_path = parts
+                self._games_data.append({
+                    "id": game_id,
+                    "name": name,
+                    "year": year if year else None,
+                    "full_path": full_path,
+                })
 
     def get_games(self) -> List[Dict]:
         if not self._games_data:
