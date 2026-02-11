@@ -1,6 +1,7 @@
 """Network configuration for DOSBox IPX multiplayer."""
 
 import socket
+import struct
 from dataclasses import dataclass
 from typing import Optional
 
@@ -55,6 +56,37 @@ def get_local_ip() -> Optional[str]:
             return s.getsockname()[0]
     except (OSError, IndexError):
         return None
+
+
+def is_cgnat_address(ip):
+    """Check if an IP address is in a CGNAT or private range.
+
+    These addresses are not publicly routable, so port forwarding on the
+    local router alone won't make the machine reachable from the internet.
+
+    Detected ranges:
+        100.64.0.0/10  — RFC 6598 CGNAT shared address space (Starlink, etc.)
+        10.0.0.0/8     — RFC 1918 private
+        172.16.0.0/12  — RFC 1918 private
+        192.168.0.0/16 — RFC 1918 private
+
+    Args:
+        ip: IPv4 address string.
+
+    Returns:
+        True if the address is in a CGNAT or private range.
+    """
+    try:
+        addr = struct.unpack("!I", socket.inet_aton(ip))[0]
+    except (OSError, socket.error):
+        return False
+
+    return (
+        (addr & 0xFFC00000) == 0x64400000  # 100.64.0.0/10
+        or (addr & 0xFF000000) == 0x0A000000  # 10.0.0.0/8
+        or (addr & 0xFFF00000) == 0xAC100000  # 172.16.0.0/12
+        or (addr & 0xFFFF0000) == 0xC0A80000  # 192.168.0.0/16
+    )
 
 
 def get_public_ip(timeout=5):

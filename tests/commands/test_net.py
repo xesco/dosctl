@@ -585,6 +585,139 @@ class TestNetHostInternet:
     @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
     @patch("dosctl.commands.net.set_game_command")
     @patch("dosctl.lib.decorators.create_collection")
+    def test_host_internet_cgnat_empty_wan_ip(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        mock_public_ip,
+        mock_upnp_class,
+        tmp_path,
+    ):
+        """Should show CGNAT warning when UPnP fails and WAN IP is empty."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        mock_mapper = MagicMock()
+        mock_mapper.discover_gateway.return_value = True
+        mock_mapper.add_port_mapping.return_value = False
+        mock_mapper.get_external_ip.return_value = None
+        mock_upnp_class.return_value = mock_mapper
+
+        result = runner.invoke(cli, ["net", "host", "abc12345", "--internet"])
+        assert result.exit_code == 0
+        assert "CGNAT" in result.output
+        assert "other player to host" in result.output
+        # Should still show discovery code
+        expected_code = encode_discovery_code("203.0.113.5")
+        assert expected_code in result.output
+
+    @patch("dosctl.commands.net.UPnPPortMapper")
+    @patch("dosctl.commands.net.get_public_ip", return_value="203.0.113.5")
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_internet_cgnat_private_wan_ip(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        mock_public_ip,
+        mock_upnp_class,
+        tmp_path,
+    ):
+        """Should show CGNAT warning when WAN IP is in CGNAT range."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        mock_mapper = MagicMock()
+        mock_mapper.discover_gateway.return_value = True
+        mock_mapper.add_port_mapping.return_value = False
+        mock_mapper.get_external_ip.return_value = "100.78.42.1"
+        mock_upnp_class.return_value = mock_mapper
+
+        result = runner.invoke(cli, ["net", "host", "abc12345", "--internet"])
+        assert result.exit_code == 0
+        assert "CGNAT" in result.output
+        assert "other player to host" in result.output
+        # Should still show discovery code
+        expected_code = encode_discovery_code("203.0.113.5")
+        assert expected_code in result.output
+
+    @patch("dosctl.commands.net.UPnPPortMapper")
+    @patch("dosctl.commands.net.get_public_ip", return_value="203.0.113.5")
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_internet_upnp_fails_not_cgnat(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        mock_public_ip,
+        mock_upnp_class,
+        tmp_path,
+    ):
+        """Should show generic port forward message when WAN IP is public."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        mock_mapper = MagicMock()
+        mock_mapper.discover_gateway.return_value = True
+        mock_mapper.add_port_mapping.return_value = False
+        mock_mapper.get_external_ip.return_value = "203.0.113.5"
+        mock_mapper._last_error = Exception("conflict")
+        mock_upnp_class.return_value = mock_mapper
+
+        result = runner.invoke(cli, ["net", "host", "abc12345", "--internet"])
+        assert result.exit_code == 0
+        assert "CGNAT" not in result.output
+        assert "manually forward" in result.output.lower()
+        # Should still show discovery code
+        expected_code = encode_discovery_code("203.0.113.5")
+        assert expected_code in result.output
+
+    @patch("dosctl.commands.net.UPnPPortMapper")
+    @patch("dosctl.commands.net.get_public_ip", return_value="203.0.113.5")
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
     def test_host_internet_upnp_fails(
         self,
         mock_collection,

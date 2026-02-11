@@ -13,6 +13,7 @@ from dosctl.lib.network import (
     IPXClientConfig,
     get_local_ip,
     get_public_ip,
+    is_cgnat_address,
 )
 from dosctl.lib.discovery import encode_discovery_code, resolve_host
 from dosctl.lib.upnp import UPnPPortMapper
@@ -122,15 +123,28 @@ def _setup_internet_hosting(port, game_id, public_ip=None, no_upnp=False):
                             f"(UDP port {port}). It may still work.",
                         )
                 else:
-                    detail = ""
-                    if mapper._last_error:
-                        detail = " ({})".format(mapper._last_error)
-                    click.echo(
-                        f"UPnP: Could not open port{detail}. You may need to manually "
-                        f"forward UDP port {port} to {local_ip or 'your machine'} "
-                        f"on your router.",
-                        err=True,
-                    )
+                    # Probe for CGNAT: check the router's WAN IP
+                    wan_ip = mapper.get_external_ip()
+                    if not wan_ip or is_cgnat_address(wan_ip):
+                        click.echo(
+                            "UPnP: Port mapping failed. Your router appears "
+                            "to be behind CGNAT (common with Starlink and "
+                            "some ISPs), so port forwarding won't work.\n"
+                            "The easiest option is to ask the other player to "
+                            "host instead. Alternatively, get a public IP "
+                            "add-on from your ISP or use a VPN like Tailscale.",
+                            err=True,
+                        )
+                    else:
+                        detail = ""
+                        if mapper._last_error:
+                            detail = " ({})".format(mapper._last_error)
+                        click.echo(
+                            f"UPnP: Could not open port{detail}. You may need "
+                            f"to manually forward UDP port {port} to "
+                            f"{local_ip or 'your machine'} on your router.",
+                            err=True,
+                        )
                     mapper = None
             else:
                 click.echo(

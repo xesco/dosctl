@@ -54,6 +54,7 @@ Most commands are wrapped with `@ensure_cache`, which automatically creates dire
 - `IPXServerConfig` / `IPXClientConfig` dataclasses with `to_dosbox_command()` methods
 - `get_local_ip()` helper for LAN IP detection
 - `get_public_ip()` helper for public IP detection via external services
+- `is_cgnat_address()` helper to detect CGNAT/private WAN IPs (Starlink, etc.)
 
 ### Discovery Codes (`src/dosctl/lib/discovery.py`)
 - Encodes IPv4 + port into human-friendly codes like `DOOM-3KF8A`
