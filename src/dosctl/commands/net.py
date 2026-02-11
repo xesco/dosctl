@@ -207,12 +207,14 @@ def net(ctx):
     help="Enable internet play (UPnP port mapping + discovery code).",
 )
 @click.option(
+    "-I",
     "--public-ip",
     default=None,
     type=str,
     help="Specify your public IP address (skips automatic detection).",
 )
 @click.option(
+    "-U",
     "--no-upnp",
     is_flag=True,
     default=False,
