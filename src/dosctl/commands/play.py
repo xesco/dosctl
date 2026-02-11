@@ -15,7 +15,7 @@ from dosctl.lib.dosbox import is_dosbox_installed, get_dosbox_launcher
 @ensure_cache
 def play(collection, game_id, command_parts, configure, floppy):
     """
-    Runs a game. Prompts for an executable on the first run or when --configure is used.
+    Plays a game. Prompts for an executable on the first run or when --configure is used.
     """
     if not is_dosbox_installed():
         help_text = textwrap.dedent("""
