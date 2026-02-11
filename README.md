@@ -101,6 +101,37 @@ Deletes an installed game and its downloaded archive.
 
 Re-downloads the master game list from the Internet Archive.
 
+### `dosctl net host <game-id>`
+
+Hosts a multiplayer game over your local network using DOSBox IPX networking. Displays your local IP so the other player knows where to connect.
+
+| Flag | Description |
+|------|-------------|
+| `-p, --port <port>` | UDP port for the IPX server (default: 19900) |
+| `-c, --configure` | Force re-selection of the default executable |
+
+### `dosctl net join <game-id> <host-ip>`
+
+Joins a multiplayer game hosted by another player on your local network.
+
+| Flag | Description |
+|------|-------------|
+| `-p, --port <port>` | UDP port of the IPX server (default: 19900) |
+| `-c, --configure` | Force re-selection of the default executable |
+
+**Example — two players on the same network:**
+
+```bash
+# Player 1 (host):
+dosctl net host 62ef2769
+# Output: "Your local IP appears to be: 192.168.1.42"
+
+# Player 2 (join):
+dosctl net join 62ef2769 192.168.1.42
+```
+
+Both DOSBox instances start with IPX networking enabled. Configure multiplayer in the game's own network/modem menu (select IPX). DOSBox stays open after the game exits so you can play again without reconnecting.
+
 ## Configuration
 
 Data is stored in platform-appropriate directories:

@@ -28,8 +28,8 @@ python -m build
 ## Architecture
 
 ### CLI Layer (Click framework)
-- **Entry point:** `src/dosctl/main.py` — defines the `cli` Click group with subcommands: list, search, play, inspect, delete, refresh
-- **Commands:** `src/dosctl/commands/` — each file is one subcommand
+- **Entry point:** `src/dosctl/main.py` — defines the `cli` Click group with subcommands: list, search, play, inspect, delete, refresh, net
+- **Commands:** `src/dosctl/commands/` — each file is one subcommand (net.py is a Click subgroup with host/join)
 
 ### Core Pattern: `@ensure_cache` decorator (`src/dosctl/lib/decorators.py`)
 Most commands are wrapped with `@ensure_cache`, which automatically creates directories, initializes the game collection, and loads/downloads the game cache before passing the collection to the command handler. This is the central orchestration mechanism.
@@ -48,12 +48,18 @@ Most commands are wrapped with `@ensure_cache`, which automatically creates dire
 ### DOSBox Launcher (`src/dosctl/lib/dosbox.py`)
 - `DOSBoxLauncher` ABC and `StandardDOSBoxLauncher` using subprocess.Popen
 - `get_dosbox_launcher()` singleton factory, `is_dosbox_available()`, `is_dosbox_installed()`
+- Supports IPX networking via the `ipx` option (accepts `IPXServerConfig` or `IPXClientConfig`), which injects `-conf ipx.conf` and `IPXNET` commands
+
+### IPX Networking (`src/dosctl/lib/network.py`)
+- `IPXServerConfig` / `IPXClientConfig` dataclasses with `to_dosbox_command()` methods
+- `get_local_ip()` helper for LAN IP detection
+- Designed for Phase 2 extension (relay server) without changing the launcher
 
 ### Other Key Modules
 - `config.py` — platform-aware directory paths (config, data, collections, downloads, installed)
 - `lib/game.py` — game download, extraction, and installation
 - `lib/config_store.py` — persists selected executables per game in JSON
-- `lib/executables.py` — finds .exe/.com/.bat files in game directories
+- `lib/executables.py` — finds .exe/.com/.bat files in game directories; shared executable selection/prompting logic used by both play and net commands
 - `lib/display.py` — terminal display formatting for game listings
 
 ## Conventions
