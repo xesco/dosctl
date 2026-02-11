@@ -103,31 +103,51 @@ Re-downloads the master game list from the Internet Archive.
 
 ### `dosctl net host <game-id>`
 
-Hosts a multiplayer game over your local network using DOSBox IPX networking. Displays your local IP so the other player knows where to connect.
+Hosts a multiplayer game using DOSBox IPX networking. By default, hosts on your local network. Use `--internet` to enable internet play with automatic UPnP port mapping and a discovery code.
 
 | Flag | Description |
 |------|-------------|
 | `-p, --port <port>` | UDP port for the IPX server (default: 19900) |
 | `-c, --configure` | Force re-selection of the default executable |
+| `-i, --internet` | Enable internet play (UPnP port mapping + discovery code) |
+| `-I, --public-ip <ip>` | Specify your public IP (skips automatic detection; requires `--internet`) |
+| `-U, --no-upnp` | Skip UPnP port mapping (requires `--internet`) |
 
-### `dosctl net join <game-id> <host-ip>`
+### `dosctl net join <game-id> <host>`
 
-Joins a multiplayer game hosted by another player on your local network.
+Joins a multiplayer game hosted by another player. The host argument can be a raw IP address (for LAN) or a discovery code (for internet play).
 
 | Flag | Description |
 |------|-------------|
 | `-p, --port <port>` | UDP port of the IPX server (default: 19900) |
 | `-c, --configure` | Force re-selection of the default executable |
 
-**Example — two players on the same network:**
+**Example — LAN play:**
 
 ```bash
 # Player 1 (host):
 dosctl net host 62ef2769
 # Output: "Your local IP appears to be: 192.168.1.42"
 
-# Player 2 (join):
+# Player 2 (join with IP):
 dosctl net join 62ef2769 192.168.1.42
+```
+
+**Example — internet play:**
+
+```bash
+# Player 1 (host with internet mode):
+dosctl net host 62ef2769 --internet
+# Output: "Your discovery code: DOOM-3KF8A"
+
+# Player 2 (join with discovery code):
+dosctl net join 62ef2769 DOOM-3KF8A
+```
+
+If UPnP fails or you've already forwarded the port manually:
+
+```bash
+dosctl net host 62ef2769 --internet --no-upnp --public-ip 203.0.113.5
 ```
 
 Both DOSBox instances start with IPX networking enabled. Configure multiplayer in the game's own network/modem menu (select IPX). DOSBox stays open after the game exits so you can play again without reconnecting.

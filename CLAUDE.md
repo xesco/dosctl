@@ -31,6 +31,13 @@ python -m build
 - **Entry point:** `src/dosctl/main.py` — defines the `cli` Click group with subcommands: list, search, play, inspect, delete, refresh, net
 - **Commands:** `src/dosctl/commands/` — each file is one subcommand (net.py is a Click subgroup with host/join)
 
+### Net Command (`src/dosctl/commands/net.py`)
+- Click subgroup with two subcommands: `host` and `join`
+- `host` — starts DOSBox as IPX server. LAN mode by default; `--internet/-i` enables UPnP port mapping, public IP detection, and discovery code generation. Additional flags: `--public-ip/-I` (skip IP detection), `--no-upnp/-U` (skip UPnP), `--port/-p`, `--configure/-c`
+- `join` — connects to an IPX server. Accepts raw IP (LAN) or discovery code (internet). Uses `resolve_host()` to auto-detect format. Flags: `--port/-p`, `--configure/-c`
+- `_setup_internet_hosting()` orchestrates UPnP → CGNAT detection → public IP → discovery code display
+- `_prepare_game()` and `_launch_net_game()` are shared helpers for game installation and DOSBox launch
+
 ### Core Pattern: `@ensure_cache` decorator (`src/dosctl/lib/decorators.py`)
 Most commands are wrapped with `@ensure_cache`, which automatically creates directories, initializes the game collection, and loads/downloads the game cache before passing the collection to the command handler. This is the central orchestration mechanism.
 
