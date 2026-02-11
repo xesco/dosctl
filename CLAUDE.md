@@ -53,7 +53,18 @@ Most commands are wrapped with `@ensure_cache`, which automatically creates dire
 ### IPX Networking (`src/dosctl/lib/network.py`)
 - `IPXServerConfig` / `IPXClientConfig` dataclasses with `to_dosbox_command()` methods
 - `get_local_ip()` helper for LAN IP detection
-- Designed for Phase 2 extension (relay server) without changing the launcher
+- `get_public_ip()` helper for public IP detection via external services
+
+### Discovery Codes (`src/dosctl/lib/discovery.py`)
+- Encodes IPv4 + port into human-friendly codes like `DOOM-3KF8A`
+- 256-word list maps first IP byte to a word; remaining 3 bytes as base36
+- `encode_discovery_code()`, `decode_discovery_code()`, `resolve_host()` (auto-detects raw IP vs code)
+- Word list stored in `src/dosctl/lib/wordlist.txt` (8 words per line)
+
+### UPnP Port Mapping (`src/dosctl/lib/upnp.py`)
+- Stdlib-only UPnP IGD implementation for automatic router port forwarding
+- SSDP discovery, SOAP port mapping, external IP retrieval
+- `UPnPPortMapper` class with atexit cleanup of registered mappings
 
 ### Other Key Modules
 - `config.py` — platform-aware directory paths (config, data, collections, downloads, installed)

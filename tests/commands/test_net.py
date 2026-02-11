@@ -9,7 +9,9 @@ from dosctl.lib.network import (
     IPXClientConfig,
     DEFAULT_IPX_PORT,
     get_local_ip,
+    get_public_ip,
 )
+from dosctl.lib.discovery import encode_discovery_code
 
 
 # --- Network dataclass tests ---
@@ -84,6 +86,37 @@ class TestGetLocalIP:
 
         result = get_local_ip()
         assert result is None
+
+
+class TestGetPublicIP:
+    """Test get_public_ip function."""
+
+    @patch("dosctl.lib.network.urlopen")
+    def test_returns_ip_on_success(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"203.0.113.5"
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_response
+
+        result = get_public_ip(timeout=1)
+        assert result == "203.0.113.5"
+
+    @patch("dosctl.lib.network.urlopen")
+    def test_returns_none_on_failure(self, mock_urlopen):
+        mock_urlopen.side_effect = Exception("Network error")
+
+        result = get_public_ip(timeout=1)
+        assert result is None
+
+    @patch("dosctl.lib.network.urlopen")
+    def test_strips_whitespace(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"  203.0.113.5\n"
+        mock_urlopen.return_value = mock_response
+
+        result = get_public_ip(timeout=1)
+        assert result == "203.0.113.5"
 
 
 # --- DOSBox launcher IPX integration tests ---
@@ -435,3 +468,401 @@ class TestNetGroup:
         result = runner.invoke(cli, ["net", "--help"])
         assert result.exit_code == 0
         assert "Multiplayer" in result.output
+
+
+class TestNetHostInternet:
+    """Test the 'dosctl net host --internet' command."""
+
+    @patch("dosctl.commands.net.UPnPPortMapper")
+    @patch("dosctl.commands.net.get_public_ip", return_value="203.0.113.5")
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_internet_success(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        mock_public_ip,
+        mock_upnp_class,
+        tmp_path,
+    ):
+        """Should show discovery code when --internet is used."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        # Mock UPnP mapper
+        mock_mapper = MagicMock()
+        mock_mapper.discover_gateway.return_value = True
+        mock_mapper.add_port_mapping.return_value = True
+        mock_mapper.get_external_ip.return_value = None
+        mock_upnp_class.return_value = mock_mapper
+
+        result = runner.invoke(cli, ["net", "host", "abc12345", "--internet"])
+        assert result.exit_code == 0
+        assert "discovery code" in result.output.lower()
+        # Should contain a discovery code for 203.0.113.5
+        expected_code = encode_discovery_code("203.0.113.5")
+        assert expected_code in result.output
+        assert "dosctl net join abc12345" in result.output
+
+        # Verify UPnP was attempted
+        mock_mapper.discover_gateway.assert_called_once()
+        mock_mapper.add_port_mapping.assert_called_once()
+
+        # Verify launcher was still called with IPXServerConfig
+        call_kwargs = mock_launcher.return_value.launch_game.call_args[1]
+        assert isinstance(call_kwargs["ipx"], IPXServerConfig)
+
+    @patch("dosctl.commands.net.UPnPPortMapper")
+    @patch("dosctl.commands.net.get_public_ip", return_value="203.0.113.5")
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_internet_upnp_fails(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        mock_public_ip,
+        mock_upnp_class,
+        tmp_path,
+    ):
+        """Should show warning when UPnP fails but still proceed."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        # Mock UPnP failure
+        mock_mapper = MagicMock()
+        mock_mapper.discover_gateway.return_value = False
+        mock_upnp_class.return_value = mock_mapper
+
+        result = runner.invoke(cli, ["net", "host", "abc12345", "--internet"])
+        assert result.exit_code == 0
+        # Should warn about UPnP failure
+        assert "forward" in result.output.lower() or "upnp" in result.output.lower()
+        # Should still show discovery code
+        expected_code = encode_discovery_code("203.0.113.5")
+        assert expected_code in result.output
+
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_without_internet_flag(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        tmp_path,
+    ):
+        """Without --internet, should show LAN info (no discovery code)."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        result = runner.invoke(cli, ["net", "host", "abc12345"])
+        assert result.exit_code == 0
+        assert "192.168.1.100" in result.output
+        assert "discovery code" not in result.output.lower()
+
+
+class TestNetJoinDiscoveryCode:
+    """Test the 'dosctl net join' command with discovery codes."""
+
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_join_with_discovery_code(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        tmp_path,
+    ):
+        """Should resolve discovery code and connect."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        # Generate a code for a known IP
+        code = encode_discovery_code("203.0.113.5")
+
+        result = runner.invoke(cli, ["net", "join", "abc12345", code])
+        assert result.exit_code == 0
+        assert "Resolved discovery code" in result.output
+        assert "203.0.113.5" in result.output
+
+        call_kwargs = mock_launcher.return_value.launch_game.call_args[1]
+        assert isinstance(call_kwargs["ipx"], IPXClientConfig)
+        assert call_kwargs["ipx"].host == "203.0.113.5"
+        assert call_kwargs["ipx"].port == DEFAULT_IPX_PORT
+
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_join_with_discovery_code_custom_port(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        tmp_path,
+    ):
+        """Should use port from discovery code when custom."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        code = encode_discovery_code("203.0.113.5", port=9999)
+
+        result = runner.invoke(cli, ["net", "join", "abc12345", code])
+        assert result.exit_code == 0
+
+        call_kwargs = mock_launcher.return_value.launch_game.call_args[1]
+        assert call_kwargs["ipx"].host == "203.0.113.5"
+        assert call_kwargs["ipx"].port == 9999
+
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_join_with_raw_ip_still_works(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        tmp_path,
+    ):
+        """Raw IP should still work (backward compat)."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        result = runner.invoke(cli, ["net", "join", "abc12345", "192.168.1.42"])
+        assert result.exit_code == 0
+        assert "Resolved discovery code" not in result.output
+        assert "192.168.1.42" in result.output
+
+        call_kwargs = mock_launcher.return_value.launch_game.call_args[1]
+        assert call_kwargs["ipx"].host == "192.168.1.42"
+
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_join_with_invalid_code(self, mock_collection, mock_dosbox):
+        """Should show error for invalid discovery code."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["net", "join", "abc12345", "INVALID-CODE"])
+        assert "Error" in result.output or "error" in result.output.lower()
+
+
+class TestNetHostPublicIP:
+    """Test the --public-ip option for the host command."""
+
+    @patch("dosctl.commands.net.UPnPPortMapper")
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_public_ip_skips_detection(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        mock_upnp_class,
+        tmp_path,
+    ):
+        """Should use provided public IP and skip detection."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        mock_mapper = MagicMock()
+        mock_mapper.discover_gateway.return_value = True
+        mock_mapper.add_port_mapping.return_value = True
+        mock_upnp_class.return_value = mock_mapper
+
+        result = runner.invoke(
+            cli,
+            ["net", "host", "abc12345", "--internet", "--public-ip", "198.51.100.1"],
+        )
+        assert result.exit_code == 0
+        # Should use the provided IP for the discovery code
+        expected_code = encode_discovery_code("198.51.100.1")
+        assert expected_code in result.output
+        assert "Using provided public IP" in result.output
+        # get_external_ip and get_public_ip should NOT have been called
+        mock_mapper.get_external_ip.assert_not_called()
+
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_public_ip_without_internet_flag(self, mock_collection, mock_dosbox):
+        """Should error when --public-ip is used without --internet."""
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            ["net", "host", "abc12345", "--public-ip", "198.51.100.1"],
+        )
+        assert "require" in result.output.lower() or "--internet" in result.output
+
+
+class TestNetHostNoUpnp:
+    """Test the --no-upnp option for the host command."""
+
+    @patch("dosctl.commands.net.get_public_ip", return_value="203.0.113.5")
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_no_upnp_skips_port_mapping(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        mock_public_ip,
+        tmp_path,
+    ):
+        """Should skip UPnP entirely when --no-upnp is used."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        result = runner.invoke(
+            cli, ["net", "host", "abc12345", "--internet", "--no-upnp"]
+        )
+        assert result.exit_code == 0
+        assert "UPnP skipped" in result.output
+        # Should still detect public IP and show discovery code
+        expected_code = encode_discovery_code("203.0.113.5")
+        assert expected_code in result.output
+
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_no_upnp_without_internet_flag(self, mock_collection, mock_dosbox):
+        """Should error when --no-upnp is used without --internet."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["net", "host", "abc12345", "--no-upnp"])
+        assert "require" in result.output.lower() or "--internet" in result.output
+
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.commands.net.executable_exists", return_value=True)
+    @patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE")
+    @patch("dosctl.commands.net.set_game_command")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_no_upnp_with_public_ip(
+        self,
+        mock_collection,
+        mock_set_cmd,
+        mock_get_cmd,
+        mock_exe_exists,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        tmp_path,
+    ):
+        """Should work with both --no-upnp and --public-ip (fully manual)."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        result = runner.invoke(
+            cli,
+            [
+                "net",
+                "host",
+                "abc12345",
+                "--internet",
+                "--no-upnp",
+                "--public-ip",
+                "198.51.100.1",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "UPnP skipped" in result.output
+        assert "Using provided public IP" in result.output
+        expected_code = encode_discovery_code("198.51.100.1")
+        assert expected_code in result.output

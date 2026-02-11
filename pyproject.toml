@@ -45,3 +45,6 @@ dosctl = "dosctl.main:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"dosctl.lib" = ["wordlist.txt"]

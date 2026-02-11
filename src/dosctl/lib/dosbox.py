@@ -114,13 +114,14 @@ class StandardDOSBoxLauncher(DOSBoxLauncher):
             cmd.extend(["-c", f"machine {machine}"])
 
         # Launch DOSBox
-        popen_kwargs = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
-
-        # Windows-specific options to prevent console window
-        if hasattr(subprocess, "CREATE_NO_WINDOW"):
-            popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
-
-        subprocess.Popen(cmd, **popen_kwargs)
+        # Windows-specific: prevent a visible console window
+        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=creationflags,
+        )
 
 
 def _ensure_ipx_conf() -> Path:

@@ -1,8 +1,10 @@
 """Network configuration for DOSBox IPX multiplayer."""
 
 import socket
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
+
+from urllib.request import urlopen, Request
 
 DEFAULT_IPX_PORT = 19900
 
@@ -11,8 +13,9 @@ DEFAULT_IPX_PORT = 19900
 class IPXServerConfig:
     """Configuration for hosting an IPX server.
 
-    In Phase 2, the host command may resolve to an IPXClientConfig instead
-    (connecting to a relay server), so the launcher should accept either type.
+    Used by the DOSBox launcher to start an IPX server on the given port.
+    For internet play, the net command handles UPnP and discovery codes
+    separately — the launcher only sees this config.
     """
 
     port: int = DEFAULT_IPX_PORT
@@ -26,7 +29,8 @@ class IPXServerConfig:
 class IPXClientConfig:
     """Configuration for joining an IPX server.
 
-    In Phase 2, host/port may point to a relay server rather than a LAN peer.
+    The host/port may be a LAN peer or an internet host (resolved from a
+    discovery code by the net command before reaching the launcher).
     """
 
     host: str
@@ -51,3 +55,36 @@ def get_local_ip() -> Optional[str]:
             return s.getsockname()[0]
     except (OSError, IndexError):
         return None
+
+
+def get_public_ip(timeout=5):
+    """Detect this machine's public IP address via an external service.
+
+    Uses https://api.ipify.org which returns the public IP as plain text.
+    Falls back to https://checkip.amazonaws.com if ipify is unreachable.
+
+    Args:
+        timeout: Maximum seconds to wait for a response.
+
+    Returns:
+        Public IP address string, or None if detection fails.
+    """
+    services = [
+        "https://api.ipify.org",
+        "https://checkip.amazonaws.com",
+    ]
+
+    for url in services:
+        try:
+            req = Request(url)
+            req.add_header("User-Agent", "dosctl")
+            response = urlopen(req, timeout=timeout)
+            ip = response.read().decode("utf-8").strip()
+            response.close()
+            # Basic validation: should look like an IPv4 address
+            socket.inet_aton(ip)
+            return ip
+        except Exception:
+            continue
+
+    return None
