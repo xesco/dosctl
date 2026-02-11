@@ -16,8 +16,12 @@ COLLECTION_CACHE_DIR = _platform.get_collections_cache_dir()
 DOWNLOADS_DIR = _platform.get_downloads_dir()
 INSTALLED_DIR = _platform.get_installed_dir()
 
+# IPX networking config file path
+IPX_CONF_PATH = CONFIG_DIR / "ipx.conf"
+
 # Define the default source URL for the main game collection
 DEFAULT_COLLECTION_SOURCE = "https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip"
+
 
 def ensure_dirs_exist():
     """Create the config and data directories if they don't exist."""

@@ -3,8 +3,9 @@
 import subprocess
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
+from .network import IPXServerConfig, IPXClientConfig
 from .platform import PlatformBase, get_platform
 
 
@@ -40,69 +41,101 @@ class StandardDOSBoxLauncher(DOSBoxLauncher):
         return self.platform.get_dosbox_executable() is not None
 
     def launch_game(self, game_path: Path, command: str, **options) -> None:
-        """Launch a game with standard DOSBox."""
+        """Launch a game with standard DOSBox.
+
+        Options:
+            floppy (bool): Also mount game directory as A: drive.
+            exit_on_completion (bool): Add 'exit' command after game.
+            fullscreen (bool): Launch in fullscreen mode.
+            cycles (str): DOSBox CPU cycles setting.
+            machine (str): DOSBox machine type.
+            ipx (IPXServerConfig | IPXClientConfig): IPX networking config.
+                When set, enables IPX and injects the appropriate IPXNET
+                command before the game executable.
+        """
         executable = self.get_executable()
+        ipx_config = options.get("ipx")
 
         # Build the DOSBox command
-        mount_cmd = self.platform.format_dosbox_mount_command('C', game_path)
+        cmd = [executable]
 
-        cmd = [
-            executable,
-            '-c', mount_cmd,
-        ]
+        # If IPX networking is requested, load the IPX config file
+        if ipx_config is not None:
+            ipx_conf_path = _ensure_ipx_conf()
+            cmd.extend(["-conf", str(ipx_conf_path)])
+
+        mount_cmd = self.platform.format_dosbox_mount_command("C", game_path)
+        cmd.extend(["-c", mount_cmd])
 
         # Floppy mode: also mount as A: and start there
-        if options.get('floppy', False):
-            mount_a_cmd = self.platform.format_dosbox_mount_command('A', game_path)
-            cmd.extend(['-c', mount_a_cmd, '-c', 'A:'])
+        if options.get("floppy", False):
+            mount_a_cmd = self.platform.format_dosbox_mount_command("A", game_path)
+            cmd.extend(["-c", mount_a_cmd, "-c", "A:"])
         else:
-            cmd.extend(['-c', 'C:'])
+            cmd.extend(["-c", "C:"])
+
+        # Inject the IPXNET command after mounting but before the game exe
+        if ipx_config is not None:
+            cmd.extend(["-c", ipx_config.to_dosbox_command()])
 
         # Convert forward slashes to backslashes for DOS path compatibility
         # (DOS uses / as the switch character, not a path separator)
-        dos_command = command.replace('/', '\\')
+        dos_command = command.replace("/", "\\")
 
         # If the command references a subdirectory, cd into it first
         # so the game can find its data files via relative paths
-        if '\\' in dos_command.split()[0]:
-            parts = dos_command.split()[0].rsplit('\\', 1)
+        if "\\" in dos_command.split()[0]:
+            parts = dos_command.split()[0].rsplit("\\", 1)
             subdir = parts[0]
             exe_name = parts[1]
             # Rebuild command with just the executable name + any original arguments
             args = dos_command.split()[1:]
-            dos_command = ' '.join([exe_name] + args)
-            cmd.extend(['-c', f'CD {subdir}'])
+            dos_command = " ".join([exe_name] + args)
+            cmd.extend(["-c", f"CD {subdir}"])
 
-        cmd.extend(['-c', dos_command])
+        cmd.extend(["-c", dos_command])
 
         # Add platform-specific options
-        if options.get('exit_on_completion', False):
-            cmd.extend(['-c', 'exit'])
+        # Don't auto-exit during IPX sessions — players quit manually
+        if options.get("exit_on_completion", False) and ipx_config is None:
+            cmd.extend(["-c", "exit"])
 
-        if options.get('fullscreen', False):
-            cmd.append('-fullscreen')
+        if options.get("fullscreen", False):
+            cmd.append("-fullscreen")
 
         # Add cycles if specified
-        cycles = options.get('cycles')
+        cycles = options.get("cycles")
         if cycles:
-            cmd.extend(['-c', f'cycles {cycles}'])
+            cmd.extend(["-c", f"cycles {cycles}"])
 
         # Add machine type if specified
-        machine = options.get('machine')
+        machine = options.get("machine")
         if machine:
-            cmd.extend(['-c', f'machine {machine}'])
+            cmd.extend(["-c", f"machine {machine}"])
 
         # Launch DOSBox
-        popen_kwargs = {
-            'stdout': subprocess.DEVNULL,
-            'stderr': subprocess.DEVNULL
-        }
+        popen_kwargs = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
 
         # Windows-specific options to prevent console window
-        if hasattr(subprocess, 'CREATE_NO_WINDOW'):
-            popen_kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+        if hasattr(subprocess, "CREATE_NO_WINDOW"):
+            popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
 
         subprocess.Popen(cmd, **popen_kwargs)
+
+
+def _ensure_ipx_conf() -> Path:
+    """Ensure the IPX config file exists and return its path.
+
+    Creates a minimal DOSBox config file that enables IPX networking.
+    This file is loaded via -conf and merged with DOSBox's default config.
+    """
+    from dosctl.config import IPX_CONF_PATH
+
+    if not IPX_CONF_PATH.exists():
+        IPX_CONF_PATH.parent.mkdir(parents=True, exist_ok=True)
+        IPX_CONF_PATH.write_text("[ipx]\nipx=true\n")
+
+    return IPX_CONF_PATH
 
 
 def create_dosbox_launcher() -> Optional[DOSBoxLauncher]:
