@@ -4,9 +4,8 @@ import textwrap
 from dosctl.lib.decorators import ensure_cache
 from dosctl.lib.game import install_game
 from dosctl.lib.config_store import get_game_command, set_game_command
-from dosctl.lib.system import is_dosbox_installed
 from dosctl.lib.executables import find_executables, executable_exists
-from dosctl.lib.dosbox import get_dosbox_launcher
+from dosctl.lib.dosbox import is_dosbox_installed, get_dosbox_launcher
 
 @click.command()
 @click.argument('game_id')

@@ -1,12 +1,35 @@
-"""Standard DOSBox launcher implementation."""
+"""DOSBox launcher abstraction."""
 
 import subprocess
-import sys
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Any
+from typing import Optional
 
-from .base import DOSBoxLauncher
-from ..platform.base import PlatformBase
+from .platform import PlatformBase, get_platform
+
+
+class DOSBoxLauncher(ABC):
+    """Abstract base class for DOSBox launchers."""
+
+    def __init__(self, platform: PlatformBase):
+        self.platform = platform
+
+    @abstractmethod
+    def is_available(self) -> bool:
+        """Check if this DOSBox variant is available on the system."""
+        pass
+
+    @abstractmethod
+    def launch_game(self, game_path: Path, command: str, **options) -> None:
+        """Launch a game with DOSBox."""
+        pass
+
+    def get_executable(self) -> str:
+        """Get the DOSBox executable path."""
+        executable = self.platform.get_dosbox_executable()
+        if not executable:
+            raise RuntimeError("DOSBox executable not found")
+        return executable
 
 
 class StandardDOSBoxLauncher(DOSBoxLauncher):
@@ -80,3 +103,45 @@ class StandardDOSBoxLauncher(DOSBoxLauncher):
             popen_kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
 
         subprocess.Popen(cmd, **popen_kwargs)
+
+
+def create_dosbox_launcher() -> Optional[DOSBoxLauncher]:
+    """Create the best available DOSBox launcher for the current platform."""
+    platform = get_platform()
+
+    # For now, we only have the standard launcher
+    # In the future, we can add DOSBox-Staging, DOSBox-X, etc.
+    launcher = StandardDOSBoxLauncher(platform)
+
+    if launcher.is_available():
+        return launcher
+
+    return None
+
+
+# Singleton instance
+_launcher_instance: Optional[DOSBoxLauncher] = None
+
+
+def get_dosbox_launcher() -> DOSBoxLauncher:
+    """Get the DOSBox launcher instance (singleton)."""
+    global _launcher_instance
+    if _launcher_instance is None:
+        _launcher_instance = create_dosbox_launcher()
+        if _launcher_instance is None:
+            raise RuntimeError("No DOSBox installation found")
+    return _launcher_instance
+
+
+def is_dosbox_available() -> bool:
+    """Check if DOSBox is available."""
+    try:
+        launcher = create_dosbox_launcher()
+        return launcher is not None
+    except Exception:
+        return False
+
+
+def is_dosbox_installed() -> bool:
+    """Check if DOSBox is available on the system."""
+    return is_dosbox_available()

@@ -29,12 +29,3 @@ def ensure_dirs_exist():
         INSTALLED_DIR.mkdir(parents=True, exist_ok=True)
     except PermissionError as e:
         print(f"Warning: Could not create directories: {e}", file=sys.stderr)
-
-# Backward compatibility functions for ui.py
-def get_dosctl_config_dir() -> str:
-    """Get configuration directory as string (backward compatibility)."""
-    return str(CONFIG_DIR)
-
-def get_dosctl_cache_dir() -> str:
-    """Get cache directory as string (backward compatibility)."""
-    return str(_platform.get_cache_dir())
