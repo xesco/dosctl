@@ -130,9 +130,9 @@ def _setup_internet_hosting(port, game_id, public_ip=None, no_upnp=False):
                             "UPnP: Port mapping failed. Your router appears "
                             "to be behind CGNAT (common with Starlink and "
                             "some ISPs), so port forwarding won't work.\n"
-                            "The easiest option is to ask the other player to "
-                            "host instead. Alternatively, get a public IP "
-                            "add-on from your ISP or use a VPN like Tailscale.",
+                            "The easiest option is to ask the other player "
+                            "to host instead. Alternatively, get a public IP "
+                            "from your ISP or use a VPN.",
                             err=True,
                         )
                     else:
@@ -140,25 +140,28 @@ def _setup_internet_hosting(port, game_id, public_ip=None, no_upnp=False):
                         if mapper._last_error:
                             detail = " ({})".format(mapper._last_error)
                         click.echo(
-                            f"UPnP: Could not open port{detail}. You may need "
-                            f"to manually forward UDP port {port} to "
-                            f"{local_ip or 'your machine'} on your router.",
+                            f"UPnP: Could not open port automatically{detail}. "
+                            f"If you have already forwarded UDP port {port} to "
+                            f"{local_ip or 'your machine'}, you can ignore this. "
+                            f"Otherwise, manually forward the port on your "
+                            f"router.",
                             err=True,
                         )
                     mapper = None
             else:
                 click.echo(
-                    f"UPnP: No gateway found. You may need to manually "
-                    f"forward UDP port {port} to {local_ip or 'your machine'} "
-                    f"on your router.",
+                    f"UPnP: No gateway found. If you have already forwarded "
+                    f"UDP port {port}, you can ignore this. If you're on a "
+                    f"mobile hotspot, ask the other player to host instead.",
                     err=True,
                 )
                 mapper = None
         except Exception:
             click.echo(
-                f"UPnP: Could not automatically open port. You may need to manually "
-                f"forward UDP port {port} to {local_ip or 'your machine'} "
-                f"on your router.",
+                f"UPnP: Could not open port automatically. If you have "
+                f"already forwarded UDP port {port} to "
+                f"{local_ip or 'your machine'}, you can ignore this. "
+                f"Otherwise, manually forward the port on your router.",
                 err=True,
             )
             mapper = None

@@ -745,8 +745,9 @@ class TestNetHostInternet:
 
         result = runner.invoke(cli, ["net", "host", "abc12345", "--internet"])
         assert result.exit_code == 0
-        # Should warn about UPnP failure
-        assert "forward" in result.output.lower() or "upnp" in result.output.lower()
+        # Should warn about UPnP failure and suggest alternatives
+        assert "No gateway found" in result.output
+        assert "other player to host" in result.output
         # Should still show discovery code
         expected_code = encode_discovery_code("203.0.113.5")
         assert expected_code in result.output
