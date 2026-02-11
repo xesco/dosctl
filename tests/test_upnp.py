@@ -229,6 +229,66 @@ class TestGetExternalIP:
         assert result is None
 
 
+class TestVerifyPortMapping:
+    """Test port mapping verification via GetSpecificPortMappingEntry."""
+
+    def _create_discovered_mapper(self):
+        """Create a mapper with pre-set control URL and service type."""
+        mapper = UPnPPortMapper()
+        mapper._control_url = "http://192.168.1.1:1780/control/WANIPConnection"
+        mapper._service_type = "urn:schemas-upnp-org:service:WANIPConnection:1"
+        return mapper
+
+    @patch("dosctl.lib.upnp.urlopen")
+    def test_verify_success(self, mock_urlopen):
+        """Should return True when the router confirms the mapping."""
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"<ok/>"
+        mock_urlopen.return_value = mock_response
+
+        mapper = self._create_discovered_mapper()
+        result = mapper.verify_port_mapping(19900)
+
+        assert result is True
+        req = mock_urlopen.call_args[0][0]
+        body = req.data.decode("utf-8")
+        assert "GetSpecificPortMappingEntry" in body
+        assert "19900" in body
+        assert "UDP" in body
+
+    @patch("dosctl.lib.upnp.urlopen")
+    def test_verify_failure(self, mock_urlopen):
+        """Should return False when the router rejects the query."""
+        mock_urlopen.side_effect = Exception("SOAP fault: 714 NoSuchEntryInArray")
+
+        mapper = self._create_discovered_mapper()
+        result = mapper.verify_port_mapping(19900)
+
+        assert result is False
+
+    def test_verify_no_gateway(self):
+        """Should return False when no gateway is discovered."""
+        mapper = UPnPPortMapper()
+        result = mapper.verify_port_mapping(19900)
+        assert result is False
+
+    @patch("dosctl.lib.upnp.urlopen")
+    def test_verify_tcp_protocol(self, mock_urlopen):
+        """Should pass the correct protocol in the SOAP request."""
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"<ok/>"
+        mock_urlopen.return_value = mock_response
+
+        mapper = self._create_discovered_mapper()
+        result = mapper.verify_port_mapping(8080, protocol="TCP")
+
+        assert result is True
+        req = mock_urlopen.call_args[0][0]
+        body = req.data.decode("utf-8")
+        assert "TCP" in body
+        assert "8080" in body
+
+
 class TestCleanup:
     """Test cleanup of registered port mappings."""
 

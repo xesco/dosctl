@@ -111,8 +111,16 @@ def _setup_internet_hosting(port, game_id, public_ip=None, no_upnp=False):
             mapper = UPnPPortMapper()
             if mapper.discover_gateway():
                 if local_ip and mapper.add_port_mapping(port, local_ip):
-                    click.echo(f"UPnP: Opened UDP port {port} on your router.")
                     mapper.register_cleanup()
+                    if mapper.verify_port_mapping(port):
+                        click.echo(
+                            f"UPnP: Port mapping added and verified (UDP port {port})."
+                        )
+                    else:
+                        click.echo(
+                            f"UPnP: Port mapping added but could not verify "
+                            f"(UDP port {port}). It may still work.",
+                        )
                 else:
                     click.echo(
                         f"UPnP: Could not open port. You may need to manually "

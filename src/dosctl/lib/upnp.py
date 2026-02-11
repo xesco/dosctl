@@ -85,6 +85,14 @@ _GET_EXTERNAL_IP_BODY = (
     '<u:GetExternalIPAddress xmlns:u="{service_type}"></u:GetExternalIPAddress>'
 )
 
+_GET_SPECIFIC_PORT_MAPPING_BODY = (
+    '<u:GetSpecificPortMappingEntry xmlns:u="{service_type}">'
+    "<NewRemoteHost></NewRemoteHost>"
+    "<NewExternalPort>{external_port}</NewExternalPort>"
+    "<NewProtocol>{protocol}</NewProtocol>"
+    "</u:GetSpecificPortMappingEntry>"
+)
+
 
 class UPnPError(Exception):
     """Raised when a UPnP operation fails."""
@@ -227,6 +235,34 @@ class UPnPPortMapper(object):
             return None
         except Exception:
             return None
+
+    def verify_port_mapping(self, external_port, protocol="UDP"):
+        """Ask the router whether a specific port mapping exists.
+
+        Uses the UPnP GetSpecificPortMappingEntry action to confirm the
+        router actually has an active mapping for the given port.
+
+        Args:
+            external_port: External port number to check.
+            protocol: "UDP" or "TCP".
+
+        Returns:
+            True if the router confirms the mapping exists, False otherwise.
+        """
+        if not self._control_url or not self._service_type:
+            return False
+
+        body = _GET_SPECIFIC_PORT_MAPPING_BODY.format(
+            service_type=self._service_type,
+            external_port=external_port,
+            protocol=protocol,
+        )
+
+        try:
+            self._soap_request("GetSpecificPortMappingEntry", body)
+            return True
+        except Exception:
+            return False
 
     def cleanup(self):
         """Remove all port mappings registered by this instance."""
