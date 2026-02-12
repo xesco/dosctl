@@ -125,6 +125,7 @@ Hosts a multiplayer game using DOSBox IPX networking. By default, hosts on your 
 | `-i, --internet` | Enable internet play (UPnP port mapping + discovery code) |
 | `-I, --public-ip <ip>` | Specify your public IP (skips automatic detection; requires `--internet`) |
 | `-U, --no-upnp` | Skip UPnP port mapping (requires `--internet`) |
+| `-n, --no-exec` | Open DOSBox with IPX server running but don't run anything (for debugging) |
 
 ### `dosctl net join <game-id> <host>`
 

@@ -1050,3 +1050,125 @@ class TestNetHostNoUpnp:
         assert "Using provided public IP" in result.output
         expected_code = encode_discovery_code("198.51.100.1")
         assert expected_code in result.output
+
+
+class TestNetHostNoExec:
+    """Tests for the --no-exec flag on net host."""
+
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_no_exec_launches_without_command(
+        self,
+        mock_collection,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        tmp_path,
+    ):
+        """--no-exec should launch DOSBox with IPX but no executable."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        result = runner.invoke(cli, ["net", "host", "abc12345", "--no-exec"])
+        assert result.exit_code == 0
+        assert "Opening DOSBox at game directory (IPX networking)" in result.output
+
+        # Verify launcher was called with command=None and IPX config
+        mock_launcher.return_value.launch_game.assert_called_once()
+        call_kwargs = mock_launcher.return_value.launch_game.call_args[1]
+        assert call_kwargs["command"] is None
+        assert isinstance(call_kwargs["ipx"], IPXServerConfig)
+
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_no_exec_skips_executable_prompt(
+        self,
+        mock_collection,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        tmp_path,
+    ):
+        """--no-exec should not prompt for an executable."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        with patch("dosctl.commands.net.get_or_prompt_command") as mock_prompt:
+            result = runner.invoke(cli, ["net", "host", "abc12345", "-n"])
+            assert result.exit_code == 0
+            mock_prompt.assert_not_called()
+
+    @patch("dosctl.commands.net.get_public_ip", return_value="203.0.113.5")
+    @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.100")
+    @patch("dosctl.commands.net.get_dosbox_launcher")
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.commands.net.install_game")
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_no_exec_with_internet(
+        self,
+        mock_collection,
+        mock_install,
+        mock_dosbox_installed,
+        mock_launcher,
+        mock_local_ip,
+        mock_public_ip,
+        tmp_path,
+    ):
+        """--no-exec with --internet should still set up discovery code."""
+        runner = CliRunner()
+        game_path = tmp_path / "game"
+        game_path.mkdir()
+        mock_install.return_value = ({}, game_path)
+
+        result = runner.invoke(
+            cli, ["net", "host", "abc12345", "--no-exec", "--internet", "--no-upnp"]
+        )
+        assert result.exit_code == 0
+        # Should show discovery code
+        expected_code = encode_discovery_code("203.0.113.5")
+        assert expected_code in result.output
+        # Should still launch without command
+        call_kwargs = mock_launcher.return_value.launch_game.call_args[1]
+        assert call_kwargs["command"] is None
+
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_no_exec_with_configure_errors(
+        self,
+        mock_collection,
+        mock_dosbox_installed,
+    ):
+        """--no-exec with --configure should show an error."""
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["net", "host", "abc12345", "--no-exec", "--configure"]
+        )
+        assert result.exit_code == 0
+        assert "--no-exec cannot be used with --configure" in result.output
+
+    @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
+    @patch("dosctl.lib.decorators.create_collection")
+    def test_host_no_exec_with_command_parts_errors(
+        self,
+        mock_collection,
+        mock_dosbox_installed,
+    ):
+        """--no-exec with command arguments should show an error."""
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["net", "host", "abc12345", "--no-exec", "setup.exe"]
+        )
+        assert result.exit_code == 0
+        assert "--no-exec cannot be used with" in result.output

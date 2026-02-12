@@ -66,10 +66,17 @@ def _prepare_game(collection, game_id, command_parts, configure):
 
 
 def _launch_net_game(game_install_path, chosen_command_str, ipx_config):
-    """Launch a game with DOSBox and IPX networking enabled."""
-    click.echo(
-        f"Starting '{chosen_command_str.upper()}' with DOSBox (IPX networking)..."
-    )
+    """Launch a game with DOSBox and IPX networking enabled.
+
+    If chosen_command_str is None, opens DOSBox at the mounted directory
+    with IPX networking but without running any executable.
+    """
+    if chosen_command_str:
+        click.echo(
+            f"Starting '{chosen_command_str.upper()}' with DOSBox (IPX networking)..."
+        )
+    else:
+        click.echo("Opening DOSBox at game directory (IPX networking)...")
 
     try:
         launcher = get_dosbox_launcher()
@@ -248,9 +255,24 @@ def net(ctx):
     default=False,
     help="Skip UPnP port mapping (use if port is already forwarded).",
 )
+@click.option(
+    "-n",
+    "--no-exec",
+    is_flag=True,
+    default=False,
+    help="Open DOSBox with the game directory mounted but don't run anything. Useful for debugging.",
+)
 @ensure_cache
 def host(
-    collection, game_id, command_parts, port, configure, internet, public_ip, no_upnp
+    collection,
+    game_id,
+    command_parts,
+    port,
+    configure,
+    internet,
+    public_ip,
+    no_upnp,
+    no_exec,
 ):
     """Host a multiplayer game as an IPX server.
 
@@ -280,12 +302,27 @@ def host(
         )
         return
 
-    try:
-        game_install_path, chosen_command_str = _prepare_game(
-            collection, game_id, command_parts, configure
+    # --no-exec is incompatible with command_parts and --configure
+    if no_exec and (command_parts or configure):
+        click.echo(
+            "Error: --no-exec cannot be used with --configure or command arguments.",
+            err=True,
         )
-        if not game_install_path:
-            return
+        return
+
+    try:
+        if no_exec:
+            # No-exec mode: install game but skip executable selection
+            _, game_install_path = install_game(collection, game_id)
+            if not game_install_path:
+                return
+            chosen_command_str = None
+        else:
+            game_install_path, chosen_command_str = _prepare_game(
+                collection, game_id, command_parts, configure
+            )
+            if not game_install_path:
+                return
 
         if internet:
             _setup_internet_hosting(port, game_id, public_ip=public_ip, no_upnp=no_upnp)
