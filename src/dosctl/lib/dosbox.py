@@ -21,7 +21,9 @@ class DOSBoxLauncher(ABC):
         pass
 
     @abstractmethod
-    def launch_game(self, game_path: Path, command: str, **options) -> None:
+    def launch_game(
+        self, game_path: Path, command: Optional[str] = None, **options
+    ) -> None:
         """Launch a game with DOSBox."""
         pass
 
@@ -40,7 +42,9 @@ class StandardDOSBoxLauncher(DOSBoxLauncher):
         """Check if DOSBox is available on the system."""
         return self.platform.get_dosbox_executable() is not None
 
-    def launch_game(self, game_path: Path, command: str, **options) -> None:
+    def launch_game(
+        self, game_path: Path, command: Optional[str] = None, **options
+    ) -> None:
         """Launch a game with standard DOSBox.
 
         Options:
@@ -52,6 +56,9 @@ class StandardDOSBoxLauncher(DOSBoxLauncher):
             ipx (IPXServerConfig | IPXClientConfig): IPX networking config.
                 When set, enables IPX and injects the appropriate IPXNET
                 command before the game executable.
+
+        If command is None, DOSBox opens at the mounted drive prompt
+        without running any executable (useful for debugging).
         """
         executable = self.get_executable()
         ipx_config = options.get("ipx")
@@ -78,26 +85,32 @@ class StandardDOSBoxLauncher(DOSBoxLauncher):
         if ipx_config is not None:
             cmd.extend(["-c", ipx_config.to_dosbox_command()])
 
-        # Convert forward slashes to backslashes for DOS path compatibility
-        # (DOS uses / as the switch character, not a path separator)
-        dos_command = command.replace("/", "\\")
+        # If a command was specified, add the game executable
+        if command is not None:
+            # Convert forward slashes to backslashes for DOS path compatibility
+            # (DOS uses / as the switch character, not a path separator)
+            dos_command = command.replace("/", "\\")
 
-        # If the command references a subdirectory, cd into it first
-        # so the game can find its data files via relative paths
-        if "\\" in dos_command.split()[0]:
-            parts = dos_command.split()[0].rsplit("\\", 1)
-            subdir = parts[0]
-            exe_name = parts[1]
-            # Rebuild command with just the executable name + any original arguments
-            args = dos_command.split()[1:]
-            dos_command = " ".join([exe_name] + args)
-            cmd.extend(["-c", f"CD {subdir}"])
+            # If the command references a subdirectory, cd into it first
+            # so the game can find its data files via relative paths
+            if "\\" in dos_command.split()[0]:
+                parts = dos_command.split()[0].rsplit("\\", 1)
+                subdir = parts[0]
+                exe_name = parts[1]
+                # Rebuild command with just the executable name + any original arguments
+                args = dos_command.split()[1:]
+                dos_command = " ".join([exe_name] + args)
+                cmd.extend(["-c", f"CD {subdir}"])
 
-        cmd.extend(["-c", dos_command])
+            cmd.extend(["-c", dos_command])
 
         # Add platform-specific options
         # Don't auto-exit during IPX sessions — players quit manually
-        if options.get("exit_on_completion", False) and ipx_config is None:
+        if (
+            command is not None
+            and options.get("exit_on_completion", False)
+            and ipx_config is None
+        ):
             cmd.extend(["-c", "exit"])
 
         if options.get("fullscreen", False):

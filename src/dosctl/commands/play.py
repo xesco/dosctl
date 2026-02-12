@@ -24,8 +24,15 @@ from dosctl.lib.dosbox import is_dosbox_installed, get_dosbox_launcher
     default=False,
     help="Also mount game directory as A: drive and start there. Useful for floppy-based installers.",
 )
+@click.option(
+    "-n",
+    "--no-exec",
+    is_flag=True,
+    default=False,
+    help="Open DOSBox with the game directory mounted but don't run anything. Useful for debugging.",
+)
 @ensure_cache
-def play(collection, game_id, command_parts, configure, floppy):
+def play(collection, game_id, command_parts, configure, floppy, no_exec):
     """
     Plays a game. Prompts for an executable on the first run or when --configure is used.
     """
@@ -46,8 +53,21 @@ def play(collection, game_id, command_parts, configure, floppy):
         return
 
     try:
+        # --no-exec is incompatible with command_parts and --configure
+        if no_exec and (command_parts or configure):
+            click.echo(
+                "Error: --no-exec cannot be used with --configure or command arguments.",
+                err=True,
+            )
+            return
+
         _, game_install_path = install_game(collection, game_id)
         if not game_install_path:
+            return
+
+        # No-exec mode: just mount the game directory and drop to DOS prompt
+        if no_exec:
+            _launch_game(game_install_path, floppy=floppy)
             return
 
         # Determine the command to run
@@ -82,9 +102,16 @@ def play(collection, game_id, command_parts, configure, floppy):
         click.echo(f"An unexpected error occurred: {e}", err=True)
 
 
-def _launch_game(game_install_path, chosen_command_str, floppy=False):
-    """Launch the game with DOSBox."""
-    click.echo(f"Starting '{chosen_command_str.upper()}' with DOSBox...")
+def _launch_game(game_install_path, chosen_command_str=None, floppy=False):
+    """Launch the game with DOSBox.
+
+    If chosen_command_str is None, opens DOSBox at the mounted directory
+    without running any executable.
+    """
+    if chosen_command_str:
+        click.echo(f"Starting '{chosen_command_str.upper()}' with DOSBox...")
+    else:
+        click.echo("Opening DOSBox at game directory...")
 
     try:
         # Use the new DOSBox abstraction layer

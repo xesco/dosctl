@@ -73,6 +73,12 @@ Searches for games. Query is optional if `--year` is used.
 
 Runs a game. Downloads and installs it if needed. On first run, prompts for the main executable; the choice is saved for future runs.
 
+| Flag | Description |
+|------|-------------|
+| `-c, --configure` | Force re-selection of the default executable |
+| `-a, --floppy` | Also mount game directory as A: drive (for floppy-based installers) |
+| `-n, --no-exec` | Open DOSBox with the game directory mounted but don't run anything (for debugging) |
+
 You can override the saved executable by passing command parts directly, or use `--configure` to re-pick interactively:
 
 ```bash
@@ -87,6 +93,13 @@ Some games include floppy-based installers that expect source files on A: and in
 ```bash
 dosctl play 62ef2769 install.bat C: -a  # Run installer with floppy mode
 dosctl play 62ef2769 STARCON2/GAME.EXE  # Then run the installed game normally
+```
+
+To troubleshoot a game, open DOSBox at the game directory without running anything:
+
+```bash
+dosctl play 62ef2769 --no-exec          # Drop to C:\> prompt
+dosctl play 62ef2769 --no-exec -a       # Drop to A:\> prompt (floppy mode)
 ```
 
 ### `dosctl inspect <game-id>`
