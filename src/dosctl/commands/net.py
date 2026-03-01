@@ -66,7 +66,7 @@ def _prepare_game(collection, game_id, command_parts, configure):
     return game_install_path, chosen_command_str
 
 
-def _launch_net_game(game_install_path, chosen_command_str, ipx_config):
+def _launch_net_game(game_install_path, chosen_command_str, ipx_config, conf=None):
     """Launch a game with DOSBox and IPX networking enabled.
 
     If chosen_command_str is None, opens DOSBox at the mounted directory
@@ -85,6 +85,7 @@ def _launch_net_game(game_install_path, chosen_command_str, ipx_config):
             game_path=game_install_path,
             command=chosen_command_str,
             ipx=ipx_config,
+            conf=conf,
         )
     except RuntimeError as e:
         click.echo(f"Error: {e}", err=True)
@@ -349,7 +350,8 @@ def host(
             click.echo()
 
         ipx_config = IPXServerConfig(port=port)
-        _launch_net_game(game_install_path, chosen_command_str, ipx_config)
+        conf_path = game_install_path / "dosbox.conf"
+        _launch_net_game(game_install_path, chosen_command_str, ipx_config, conf=conf_path if conf_path.exists() else None)
 
     except FileNotFoundError as e:
         click.echo(f"Error: {e}", err=True)
@@ -424,7 +426,8 @@ def join(collection, game_id, host_ip, command_parts, port, configure):
         click.echo()
 
         ipx_config = IPXClientConfig(host=resolved_ip, port=actual_port)
-        _launch_net_game(game_install_path, chosen_command_str, ipx_config)
+        conf_path = game_install_path / "dosbox.conf"
+        _launch_net_game(game_install_path, chosen_command_str, ipx_config, conf=conf_path if conf_path.exists() else None)
 
     except FileNotFoundError as e:
         click.echo(f"Error: {e}", err=True)

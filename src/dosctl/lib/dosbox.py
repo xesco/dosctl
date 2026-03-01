@@ -66,6 +66,11 @@ class StandardDOSBoxLauncher(DOSBoxLauncher):
         # Build the DOSBox command
         cmd = [executable]
 
+        # Per-game config file (loaded before mount commands)
+        conf = options.get("conf")
+        if conf is not None:
+            cmd.extend(["-conf", str(conf)])
+
         # If IPX networking is requested, load the IPX config file
         if ipx_config is not None:
             ipx_conf_path = _ensure_ipx_conf()

@@ -68,9 +68,12 @@ def play(collection, game_id, command_parts, configure, floppy, no_exec):
         if not game_install_path:
             return
 
+        conf_path = game_install_path / "dosbox.conf"
+        conf = conf_path if conf_path.exists() else None
+
         # No-exec mode: just mount the game directory and drop to DOS prompt
         if no_exec:
-            _launch_game(game_install_path, floppy=floppy)
+            _launch_game(game_install_path, floppy=floppy, conf=conf)
             return
 
         # Determine the command to run
@@ -81,9 +84,7 @@ def play(collection, game_id, command_parts, configure, floppy, no_exec):
             return
 
         if floppy:
-            # Floppy mode: skip saving default and executable validation
-            # (the command may reference floppy paths or drive letters)
-            _launch_game(game_install_path, chosen_command_str, floppy=True)
+            _launch_game(game_install_path, chosen_command_str, floppy=True, conf=conf)
             return
 
         # Save the chosen command for future runs
@@ -97,7 +98,7 @@ def play(collection, game_id, command_parts, configure, floppy, no_exec):
             return
 
         # Launch the game
-        _launch_game(game_install_path, chosen_command_str)
+        _launch_game(game_install_path, chosen_command_str, conf=conf)
 
     except FileNotFoundError as e:
         click.echo(f"Error: {e}", err=True)
@@ -105,7 +106,7 @@ def play(collection, game_id, command_parts, configure, floppy, no_exec):
         click.echo(f"An unexpected error occurred: {e}", err=True)
 
 
-def _launch_game(game_install_path, chosen_command_str=None, floppy=False):
+def _launch_game(game_install_path, chosen_command_str=None, floppy=False, conf=None):
     """Launch the game with DOSBox.
 
     If chosen_command_str is None, opens DOSBox at the mounted directory
@@ -124,6 +125,7 @@ def _launch_game(game_install_path, chosen_command_str=None, floppy=False):
             command=chosen_command_str,
             exit_on_completion=True,
             floppy=floppy,
+            conf=conf,
         )
     except RuntimeError as e:
         click.echo(f"Error: {e}", err=True)
