@@ -102,11 +102,17 @@ dosctl play 62ef2769 --no-exec          # Drop to C:\> prompt
 dosctl play 62ef2769 --no-exec -a       # Drop to A:\> prompt (floppy mode)
 ```
 
-### `dosctl inspect <game-id>`
+**Per-game DOSBox config:** if a `dosbox.conf` file exists in the game's install directory, it is automatically loaded by DOSBox (via `-conf`). Use it to override cycles, memory, sound settings, or any other DOSBox option for that specific game. The `net host` and `net join` commands honour the same file.
+
+### `dosctl inspect <game-id|alias>`
 
 Shows installed files for a game. Use `-e, --executables` to show only `.exe`/`.com`/`.bat` files.
 
-### `dosctl delete <game-id>`
+### `dosctl info <game-id|alias>`
+
+Shows catalog metadata and local status for a game: name, ID, release year, alias (if set), download/install status, install path, and the saved default executable.
+
+### `dosctl delete <game-id|alias>`
 
 Deletes an installed game and its downloaded archive.
 
@@ -114,7 +120,30 @@ Deletes an installed game and its downloaded archive.
 
 Re-downloads the master game list from the Internet Archive.
 
-### `dosctl net host <game-id>`
+### `dosctl alias`
+
+Manage short, memorable names (aliases) for game IDs. Aliases can be used in place of the 8-character ID in any command that accepts one (`play`, `inspect`, `info`, `delete`, `net host`, `net join`).
+
+Alias names must start with a letter or digit and contain only lowercase letters, digits, and hyphens.
+
+#### `dosctl alias set <alias> <game-id>`
+
+Create or update an alias:
+
+```bash
+dosctl alias set doom 62ef2769
+dosctl play doom        # same as: dosctl play 62ef2769
+```
+
+#### `dosctl alias remove <alias>`
+
+Remove an alias.
+
+#### `dosctl alias list`
+
+List all defined aliases.
+
+### `dosctl net host <game-id|alias>`
 
 Hosts a multiplayer game using DOSBox IPX networking. By default, hosts on your local network. Use `--internet` to enable internet play with automatic UPnP port mapping and a discovery code.
 
@@ -127,7 +156,7 @@ Hosts a multiplayer game using DOSBox IPX networking. By default, hosts on your 
 | `-U, --no-upnp` | Skip UPnP port mapping (requires `--internet`) |
 | `-n, --no-exec` | Open DOSBox with IPX server running but don't run anything (for debugging) |
 
-### `dosctl net join <game-id> <host>`
+### `dosctl net join <game-id|alias> <host>`
 
 Joins a multiplayer game hosted by another player. The host argument can be a raw IP address (for LAN) or a discovery code (for internet play).
 
@@ -170,15 +199,26 @@ Both DOSBox instances start with IPX networking enabled. Configure multiplayer i
 
 Data is stored in platform-appropriate directories:
 
-| Platform | Base directory |
-|----------|---------------|
-| Linux/macOS | `~/.local/share/dosctl/` |
-| Windows | `%USERPROFILE%\AppData\Local\dosctl\` |
+| Platform | Config directory | Data directory |
+|----------|-----------------|----------------|
+| Linux | `~/.config/dosctl/` | `~/.local/share/dosctl/` |
+| macOS | `~/.local/share/dosctl/` | `~/.local/share/dosctl/` |
+| Windows | `%USERPROFILE%\AppData\Local\dosctl\` | `%USERPROFILE%\AppData\Local\dosctl\` |
 
+**Config directory** (settings and aliases):
 ```
-<base-dir>/
+<config-dir>/
+  aliases.json     # Saved game aliases
+  ipx.conf         # DOSBox IPX networking config (auto-generated)
+```
+
+**Data directory** (game files):
+```
+<data-dir>/
   downloads/       # Downloaded .zip archives
   installed/       # Extracted games
+    <game-id>/     # Game install directory
+      dosbox.conf  # Optional per-game DOSBox config
   collections/     # Game list cache
 ```
 
