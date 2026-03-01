@@ -17,6 +17,7 @@ from dosctl.lib.network import (
 )
 from dosctl.lib.discovery import encode_discovery_code, resolve_host
 from dosctl.lib.upnp import UPnPPortMapper
+from dosctl.lib.aliases import resolve_game_id
 
 
 def _check_dosbox():
@@ -217,7 +218,7 @@ def net(ctx):
 
 
 @net.command()
-@click.argument("game_id")
+@click.argument("game_id", metavar="GAME_ID|ALIAS")
 @click.argument("command_parts", nargs=-1)
 @click.option(
     "-p",
@@ -294,6 +295,8 @@ def host(
     if not _check_dosbox():
         return
 
+    game_id = resolve_game_id(game_id)
+
     # --public-ip and --no-upnp require --internet
     if (public_ip or no_upnp) and not internet:
         click.echo(
@@ -355,7 +358,7 @@ def host(
 
 
 @net.command()
-@click.argument("game_id")
+@click.argument("game_id", metavar="GAME_ID|ALIAS")
 @click.argument("host_ip")
 @click.argument("command_parts", nargs=-1)
 @click.option(
@@ -386,6 +389,8 @@ def join(collection, game_id, host_ip, command_parts, port, configure):
     """
     if not _check_dosbox():
         return
+
+    game_id = resolve_game_id(game_id)
 
     try:
         # Resolve host_ip: could be a raw IP or a discovery code

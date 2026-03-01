@@ -5,10 +5,11 @@ from dosctl.lib.game import install_game
 from dosctl.lib.config_store import set_game_command
 from dosctl.lib.executables import executable_exists, get_or_prompt_command
 from dosctl.lib.dosbox import is_dosbox_installed, get_dosbox_launcher
+from dosctl.lib.aliases import resolve_game_id
 
 
 @click.command()
-@click.argument("game_id")
+@click.argument("game_id", metavar="GAME_ID|ALIAS")
 @click.argument("command_parts", nargs=-1)
 @click.option(
     "-c",
@@ -31,11 +32,35 @@ from dosctl.lib.dosbox import is_dosbox_installed, get_dosbox_launcher
     default=False,
     help="Open DOSBox with the game directory mounted but don't run anything. Useful for debugging.",
 )
+@click.option(
+    "-d",
+    "--download-only",
+    is_flag=True,
+    default=False,
+    help="Download and install the game without launching it.",
+)
 @ensure_cache
-def play(collection, game_id, command_parts, configure, floppy, no_exec):
+def play(collection, game_id, command_parts, configure, floppy, no_exec, download_only):
     """
     Plays a game. Prompts for an executable on the first run or when --configure is used.
     """
+    game_id = resolve_game_id(game_id)
+
+    # --download-only is incompatible with launch-related flags
+    if download_only and (no_exec or configure or floppy or command_parts):
+        click.echo(
+            "Error: --download-only cannot be used with --no-exec, --configure, --floppy, or command arguments.",
+            err=True,
+        )
+        return
+
+    if download_only:
+        try:
+            install_game(collection, game_id)
+        except FileNotFoundError as e:
+            click.echo(f"Error: {e}", err=True)
+        return
+
     if not is_dosbox_installed():
         help_text = textwrap.dedent("""
             Error: 'dosbox' command not found in your PATH.

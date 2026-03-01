@@ -6,6 +6,8 @@ from .commands.inspect import inspect
 from .commands.delete import delete
 from .commands.refresh import refresh
 from .commands.net import net
+from .commands.alias import alias
+from .commands.info import info
 from . import __version__
 
 
@@ -28,6 +30,8 @@ cli.add_command(inspect)
 cli.add_command(delete)
 cli.add_command(refresh)
 cli.add_command(net)
+cli.add_command(alias)
+cli.add_command(info)
 
 if __name__ == "__main__":
     cli()

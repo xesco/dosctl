@@ -1,15 +1,17 @@
 import click
 from dosctl.config import INSTALLED_DIR
 from dosctl.lib.decorators import ensure_cache
+from dosctl.lib.aliases import resolve_game_id
 
 @click.command()
-@click.argument('game_id')
+@click.argument('game_id', metavar="GAME_ID|ALIAS")
 @click.option('-e', '--executables', is_flag=True, help='Show only executable files (.exe, .com, .bat).')
 @ensure_cache
 def inspect(collection, game_id, executables):
     """
     Inspects the installed files for a given game.
     """
+    game_id = resolve_game_id(game_id)
     game_install_path = INSTALLED_DIR / game_id
 
     if not game_install_path.exists() or not game_install_path.is_dir():

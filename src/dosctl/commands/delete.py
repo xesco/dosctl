@@ -2,14 +2,16 @@ import click
 import shutil
 from dosctl.config import INSTALLED_DIR, DOWNLOADS_DIR
 from dosctl.lib.decorators import ensure_cache
+from dosctl.lib.aliases import resolve_game_id
 
 @click.command()
-@click.argument('game_id')
+@click.argument('game_id', metavar="GAME_ID|ALIAS")
 @ensure_cache
 def delete(collection, game_id):
     """
     Deletes an installed game.
     """
+    game_id = resolve_game_id(game_id)
     game_install_path = INSTALLED_DIR / game_id
 
     if not game_install_path.exists() or not game_install_path.is_dir():
