@@ -127,7 +127,7 @@ class TestInfoStatus:
 class TestInfoAliasAndCommand:
     def test_shows_alias_when_set(self, tmp_path):
         runner = CliRunner()
-        with _patch_aliases(tmp_path, {"doom": "abc12345"}):
+        with _patch_aliases(tmp_path, {"doom": {"id": "abc12345", "name": "Doom (1993)"}}):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
                 with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
@@ -178,7 +178,7 @@ class TestInfoAliasAndCommand:
     def test_resolves_alias_as_argument(self, tmp_path):
         """Passing an alias instead of a raw ID should work."""
         runner = CliRunner()
-        with _patch_aliases(tmp_path, {"doom": "abc12345"}):
+        with _patch_aliases(tmp_path, {"doom": {"id": "abc12345", "name": "Doom (1993)"}}):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
                 with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):

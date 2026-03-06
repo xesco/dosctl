@@ -35,8 +35,8 @@ def alias_set(collection, alias_name, game_id):
         click.echo(f"Error: No game with ID '{game_id}' found in the collection.", err=True)
         return
 
-    set_alias(alias_name, game_id)
-    click.echo(f"✅ Alias '{alias_name}' → '{game_id}' ({game['name']}) saved.")
+    set_alias(alias_name, game_id, game["name"])
+    click.echo(f"Alias '{alias_name}' → '{game_id}' ({game['name']}) saved.")
 
 
 @alias.command(name="remove")
@@ -45,7 +45,7 @@ def alias_remove(alias_name):
     """Remove ALIAS_NAME."""
     try:
         remove_alias(alias_name)
-        click.echo(f"✅ Alias '{alias_name}' removed.")
+        click.echo(f"Alias '{alias_name}' removed.")
     except KeyError:
         click.echo(f"Error: No alias '{alias_name}' found.", err=True)
 
@@ -58,5 +58,5 @@ def alias_list():
         click.echo("No aliases defined. Use 'dosctl alias set' to create one.")
         return
     click.echo("Defined aliases:")
-    for name, game_id in sorted(aliases.items()):
-        click.echo(f"  {name} → {game_id}")
+    for name, entry in sorted(aliases.items()):
+        click.echo(f"  {name} → {entry['id']} ({entry['name']})")

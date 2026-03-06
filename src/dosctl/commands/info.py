@@ -20,7 +20,7 @@ def info(collection, game_id):
 
     # Resolve alias (invert the alias map to find any alias for this game)
     alias = next(
-        (name for name, gid in list_aliases().items() if gid == game_id),
+        (name for name, entry in list_aliases().items() if entry["id"] == game_id),
         None,
     )
 

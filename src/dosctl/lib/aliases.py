@@ -6,8 +6,7 @@ to games by a memorable name instead of an 8-character hash ID.
 
 import json
 import re
-from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 from dosctl.config import CONFIG_DIR
 
@@ -25,7 +24,7 @@ def _validate_alias(alias: str) -> None:
         )
 
 
-def _load() -> Dict[str, str]:
+def _load() -> Dict:
     if not ALIASES_FILE.exists():
         return {}
     try:
@@ -35,7 +34,7 @@ def _load() -> Dict[str, str]:
         return {}
 
 
-def _save(aliases: Dict[str, str]) -> None:
+def _save(aliases: Dict) -> None:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     try:
         with open(ALIASES_FILE, "w") as f:
@@ -44,11 +43,11 @@ def _save(aliases: Dict[str, str]) -> None:
         print(f"Warning: Could not save aliases: {e}")
 
 
-def set_alias(alias: str, game_id: str) -> None:
-    """Create or update an alias pointing to game_id."""
+def set_alias(alias: str, game_id: str, game_name: str) -> None:
+    """Create or update an alias pointing to game_id, storing game_name."""
     _validate_alias(alias)
     aliases = _load()
-    aliases[alias] = game_id
+    aliases[alias] = {"id": game_id, "name": game_name}
     _save(aliases)
 
 
@@ -61,8 +60,8 @@ def remove_alias(alias: str) -> None:
     _save(aliases)
 
 
-def list_aliases() -> Dict[str, str]:
-    """Return all aliases as {alias: game_id}."""
+def list_aliases() -> Dict[str, Dict[str, str]]:
+    """Return all aliases as {alias: {"id": game_id, "name": game_name}}."""
     return _load()
 
 
@@ -73,4 +72,7 @@ def resolve_game_id(value: str) -> str:
     Otherwise value is returned unchanged, so raw 8-char IDs keep working.
     """
     aliases = _load()
-    return aliases.get(value, value)
+    entry = aliases.get(value)
+    if entry is None:
+        return value
+    return entry["id"]

@@ -128,10 +128,10 @@ class TestAliasList:
 class TestAliasResolutionInCommands:
     """Verify that play, inspect, delete, net host, and net join resolve aliases."""
 
-    def _setup_alias(self, tmp_path, alias="doom", game_id="abc12345"):
+    def _setup_alias(self, tmp_path, alias="doom", game_id="abc12345", game_name="Doom"):
         """Write an alias directly without going through the CLI."""
         f = tmp_path / "aliases.json"
-        f.write_text(json.dumps({alias: game_id}))
+        f.write_text(json.dumps({alias: {"id": game_id, "name": game_name}}))
 
     @patch("dosctl.commands.play.get_dosbox_launcher")
     @patch("dosctl.commands.play.is_dosbox_installed", return_value=True)
