@@ -3,8 +3,8 @@
 
 Data extracted from The Ur-Quan Masters source code.
 Usage:
-    dune.py 650.0 245.8
-    dune.py              # interactive prompt
+    sc2.py 650.0 245.8
+    sc2.py 650.0 245.8 -v
 """
 
 import math
@@ -213,52 +213,45 @@ _COLORS = ['blue', 'green', 'orange', 'red', 'white', 'yellow']
 _SIZES = ['dwarf', 'giant', 'super giant']
 
 
-def _build_stars():
-    """Decode _RAW game data into star records.
-
-    Each _RAW entry is [x*10, y*10, size, color, _, prefix, name]:
-      [0] x coordinate * 10    (6500 -> 650.0)
-      [1] y coordinate * 10    (2458 -> 245.8)
-      [2] size index           (0=dwarf, 1=giant, 2=super giant)
-      [3] color index          (0=blue, 1=green, 2=orange, 3=red, 4=white, 5=yellow)
-      [4] (unused)
-      [5] prefix index         (0=None, 1=Alpha, 2=Beta, ... 6=Zeta, ...)
-      [6] name index           (index into _NAMES)
+def _decode(entry):
+    """Decode one _RAW entry [x*10, y*10, size, color, _unused, prefix, name]
+    into a (x, y, full_name, color, size) tuple.
 
     Example: [6500,2458,0,3,0,6,12] -> (650.0, 245.8, "Zeta Brahe", "red", "dwarf")
     """
-    stars = []
-    for entry in _RAW:
-        x, y = entry[0] / 10.0, entry[1] / 10.0
-        prefix = _PREFIXES[entry[5]]
-        name = _NAMES[entry[6]]
-        full_name = f"{prefix} {name}" if prefix else name
-        color = _COLORS[entry[3]]
-        size = _SIZES[entry[2]]
-        stars.append((x, y, full_name, color, size))
-    return stars
+    x10, y10, size_i, color_i, _unused, prefix_i, name_i = entry
+    prefix = _PREFIXES[prefix_i]
+    name = _NAMES[name_i]
+    full_name = f"{prefix} {name}" if prefix else name
+    return x10 / 10.0, y10 / 10.0, full_name, _COLORS[color_i], _SIZES[size_i]
 
 
-STARS = _build_stars()
+STARS = [_decode(e) for e in _RAW]
 
 
 def find_star(x, y):
-    """Return the star at or closest to coordinates (x, y)."""
-    best = None
-    best_dist = float('inf')
-    for sx, sy, name, color, size in STARS:
-        dist = math.hypot(sx - x, sy - y)
-        if dist < best_dist:
-            best_dist = dist
-            best = (sx, sy, name, color, size)
-    return best, best_dist
+    """Return the star closest to coordinates (x, y) and its distance."""
+    return min(
+        ((math.hypot(sx - x, sy - y), (sx, sy, name, color, size))
+         for sx, sy, name, color, size in STARS),
+        key=lambda t: t[0],
+        default=(float('inf'), None),
+    )
 
 
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('-')]
     verbose = '-v' in sys.argv
+    if len(args) < 2:
+        print("Usage: sc2.py <x> <y> [-v]")
+        print("  x, y  Star Control II map coordinates (e.g. 650.0 245.8)")
+        print("  -v    Verbose output: full star name, color, size and distance")
+        sys.exit(1)
     x, y = float(args[0]), float(args[1])
-    star, dist = find_star(x, y)
+    dist, star = find_star(x, y)
+    if star is None:
+        print("No stars found.")
+        sys.exit(1)
     sx, sy, name, color, size = star
     if verbose:
         print(f"{name} ({color} {size}) at {sx} : {sy}  dist: {dist:.1f}")
