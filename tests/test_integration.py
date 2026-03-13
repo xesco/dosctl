@@ -1,21 +1,13 @@
 """Integration tests for dosctl functionality."""
 import pytest
-from unittest.mock import patch, Mock, mock_open
+from unittest.mock import patch, Mock
 from pathlib import Path
 import tempfile
-import shutil
 import zipfile
 
 from dosctl.collections.factory import create_collection
 from dosctl.lib.game import install_game
 from dosctl.lib import game as game_module
-from pathlib import Path
-import tempfile
-import shutil
-import zipfile
-
-from dosctl.collections.factory import create_collection
-from dosctl.lib.game import install_game
 
 
 class TestIntegration:
@@ -157,6 +149,44 @@ class TestIntegration:
                 # Test installing non-existent game
                 with pytest.raises(FileNotFoundError):
                     install_game(collection, "nonexistent123")
+
+    def test_install_game_cleans_up_failed_extraction(self):
+        """Failed extraction should not leave the game marked as installed."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            downloads_dir = Path(temp_dir) / "downloads"
+            installed_dir = Path(temp_dir) / "installed"
+            cache_dir = Path(temp_dir) / "cache"
+
+            downloads_dir.mkdir()
+            installed_dir.mkdir()
+            cache_dir.mkdir()
+
+            with patch.object(game_module, 'DOWNLOADS_DIR', downloads_dir), \
+                 patch.object(game_module, 'INSTALLED_DIR', installed_dir):
+
+                collection = create_collection(
+                    "tdc_release_14",
+                    "https://example.com/source",
+                    str(cache_dir)
+                )
+                collection._games_data = [{
+                    "id": "test123",
+                    "name": "Test Game",
+                    "year": "1990",
+                    "full_path": "TestGame.zip"
+                }]
+
+                zip_path = downloads_dir / "Test Game.zip"
+                with zipfile.ZipFile(zip_path, 'w') as zf:
+                    zf.writestr("GOOD.EXE", "fake game executable")
+                    zf.writestr("../evil.txt", "bad")
+
+                with patch.object(collection, 'download_game', return_value=str(zip_path)):
+                    with pytest.raises(ValueError, match="unsafe path"):
+                        install_game(collection, "test123")
+
+                assert not (installed_dir / "test123").exists()
+                assert not (Path(temp_dir) / "evil.txt").exists()
 
     def test_game_data_persistence(self):
         """Test that game data persists across operations."""

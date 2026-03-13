@@ -1,6 +1,9 @@
 import hashlib
 import re
 import requests
+import shutil
+import stat
+import tempfile
 from pathlib import Path
 from typing import List, Dict, Optional
 import zipfile
@@ -191,8 +194,68 @@ class ArchiveOrgCollection(BaseCollection):
 
         print(f"Unzipping '{zip_filename}' to '{install_path}'...")
         with zipfile.ZipFile(zip_filepath, 'r') as zip_ref:
-            zip_ref.extractall(install_path)
+            self._extract_zip_safely(zip_ref, install_path)
         print("Unzip complete.")
+
+    def _extract_zip_safely(self, zip_ref: zipfile.ZipFile, install_path: Path) -> None:
+        """Extract a ZIP into the install path without allowing path escapes.
+
+        Files are extracted into a sibling temporary directory first and only
+        moved into place after the whole archive has been validated and
+        extracted successfully.
+        """
+        install_parent = install_path.parent
+        install_parent.mkdir(parents=True, exist_ok=True)
+
+        temp_install_path = Path(
+            tempfile.mkdtemp(prefix=f"{install_path.name}.tmp-", dir=str(install_parent))
+        )
+
+        try:
+            for member in zip_ref.infolist():
+                target_path = self._validated_extract_path(
+                    member.filename, install_root=temp_install_path
+                )
+
+                if self._is_zip_symlink(member):
+                    raise ValueError(
+                        "Archive contains an unsupported symlink entry: "
+                        f"'{member.filename}'"
+                    )
+
+                if member.is_dir():
+                    target_path.mkdir(parents=True, exist_ok=True)
+                    continue
+
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                with zip_ref.open(member, "r") as source, open(target_path, "wb") as dest:
+                    shutil.copyfileobj(source, dest)
+
+            temp_install_path.rename(install_path)
+        except Exception:
+            shutil.rmtree(temp_install_path, ignore_errors=True)
+            raise
+
+    def _validated_extract_path(self, member_name: str, install_root: Path) -> Path:
+        """Return the validated extraction target for a ZIP member."""
+        normalized_name = member_name.replace("\\", "/")
+
+        if not normalized_name or normalized_name.startswith("/"):
+            raise ValueError(f"Archive contains an unsafe path: '{member_name}'")
+
+        if re.match(r"^[A-Za-z]:", normalized_name):
+            raise ValueError(f"Archive contains an unsafe path: '{member_name}'")
+
+        member_path = Path(normalized_name)
+        if any(part in ("", ".", "..") for part in member_path.parts):
+            raise ValueError(f"Archive contains an unsafe path: '{member_name}'")
+
+        return install_root.joinpath(*member_path.parts)
+
+    def _is_zip_symlink(self, member: zipfile.ZipInfo) -> bool:
+        """Return True when a ZIP member represents a Unix symlink."""
+        mode = member.external_attr >> 16
+        return stat.S_ISLNK(mode)
 
 
 class TotalDOSCollectionRelease14(ArchiveOrgCollection):

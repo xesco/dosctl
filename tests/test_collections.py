@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch, mock_open
 from pathlib import Path
 import tempfile
 import shutil
+import zipfile
 
 from dosctl.collections.archive_org import ArchiveOrgCollection, TotalDOSCollectionRelease14
 
@@ -138,6 +139,69 @@ class TestArchiveOrgCollection:
             
             game = collection.find_game("notfound")
             assert game is None
+
+    def test_unzip_game_rejects_unsafe_paths(self):
+        """Unsafe ZIP entries should be rejected before they hit the install dir."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            downloads_dir = temp_path / "downloads"
+            downloads_dir.mkdir()
+            install_path = temp_path / "installed" / "test123"
+            outside_path = temp_path / "evil.txt"
+
+            collection = TotalDOSCollectionRelease14(
+                source="https://example.com/collection",
+                cache_dir=temp_dir
+            )
+            collection._games_data = [{
+                "id": "test123",
+                "name": "Test Game",
+                "year": "1990",
+                "full_path": "TestGame.zip",
+            }]
+
+            zip_path = downloads_dir / "Test Game.zip"
+            with zipfile.ZipFile(zip_path, "w") as zf:
+                zf.writestr("GOOD.EXE", "good")
+                zf.writestr("../evil.txt", "bad")
+
+            with pytest.raises(ValueError, match="unsafe path"):
+                collection.unzip_game("test123", downloads_dir, install_path)
+
+            assert not install_path.exists()
+            assert not outside_path.exists()
+
+    def test_unzip_game_rejects_symlinks_and_stays_atomic(self):
+        """Symlink entries should be rejected without leaving partial installs."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            downloads_dir = temp_path / "downloads"
+            downloads_dir.mkdir()
+            install_path = temp_path / "installed" / "test123"
+
+            collection = TotalDOSCollectionRelease14(
+                source="https://example.com/collection",
+                cache_dir=temp_dir
+            )
+            collection._games_data = [{
+                "id": "test123",
+                "name": "Test Game",
+                "year": "1990",
+                "full_path": "TestGame.zip",
+            }]
+
+            zip_path = downloads_dir / "Test Game.zip"
+            with zipfile.ZipFile(zip_path, "w") as zf:
+                zf.writestr("GOOD.EXE", "good")
+                symlink_info = zipfile.ZipInfo("GAME.EXE")
+                symlink_info.create_system = 3
+                symlink_info.external_attr = 0o120777 << 16
+                zf.writestr(symlink_info, "GOOD.EXE")
+
+            with pytest.raises(ValueError, match="symlink entry"):
+                collection.unzip_game("test123", downloads_dir, install_path)
+
+            assert not install_path.exists()
 
 
 class TestCollectionFactory:
