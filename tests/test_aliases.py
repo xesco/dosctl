@@ -1,9 +1,14 @@
 """Unit tests for dosctl.lib.aliases."""
+
 import json
 import pytest
 from unittest.mock import patch
 from dosctl.lib.aliases import (
-    set_alias, remove_alias, list_aliases, resolve_game_id,
+    set_alias,
+    remove_alias,
+    remove_aliases_for_game_id,
+    list_aliases,
+    resolve_game_id,
     _validate_alias,
 )
 
@@ -11,6 +16,7 @@ from dosctl.lib.aliases import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _patch_aliases_file(tmp_path):
     """Return a context manager that redirects ALIASES_FILE to tmp_path."""
@@ -21,18 +27,22 @@ def _patch_aliases_file(tmp_path):
 # Validation
 # ---------------------------------------------------------------------------
 
+
 class TestValidateAlias:
     @pytest.mark.parametrize("name", ["doom", "my-game", "game2", "a", "abc123"])
     def test_valid_names_do_not_raise(self, name):
         _validate_alias(name)  # should not raise
 
-    @pytest.mark.parametrize("name", [
-        "-badstart",   # starts with hyphen
-        "UPPER",       # uppercase
-        "has space",   # space
-        "has_under",   # underscore
-        "",            # empty
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "-badstart",  # starts with hyphen
+            "UPPER",  # uppercase
+            "has space",  # space
+            "has_under",  # underscore
+            "",  # empty
+        ],
+    )
     def test_invalid_names_raise_value_error(self, name):
         with pytest.raises(ValueError):
             _validate_alias(name)
@@ -41,6 +51,7 @@ class TestValidateAlias:
 # ---------------------------------------------------------------------------
 # Storage: set / list / remove
 # ---------------------------------------------------------------------------
+
 
 class TestAliasStorage:
     def test_set_creates_file(self, tmp_path):
@@ -92,6 +103,30 @@ class TestAliasStorage:
             with pytest.raises(KeyError):
                 remove_alias("doesnotexist")
 
+    def test_remove_aliases_for_game_id_removes_matching_aliases(self, tmp_path):
+        with _patch_aliases_file(tmp_path):
+            set_alias("doom", "abc12345", "Doom (1993)")
+            set_alias("doom-shareware", "abc12345", "Doom (1993)")
+            set_alias("quake", "deadbeef", "Quake (1996)")
+
+            removed = remove_aliases_for_game_id("abc12345")
+            aliases = list_aliases()
+
+        assert removed == ["doom", "doom-shareware"]
+        assert "doom" not in aliases
+        assert "doom-shareware" not in aliases
+        assert aliases["quake"] == {"id": "deadbeef", "name": "Quake (1996)"}
+
+    def test_remove_aliases_for_game_id_returns_empty_when_no_match(self, tmp_path):
+        with _patch_aliases_file(tmp_path):
+            set_alias("quake", "deadbeef", "Quake (1996)")
+
+            removed = remove_aliases_for_game_id("abc12345")
+            aliases = list_aliases()
+
+        assert removed == []
+        assert aliases == {"quake": {"id": "deadbeef", "name": "Quake (1996)"}}
+
     def test_list_returns_empty_when_no_file(self, tmp_path):
         with _patch_aliases_file(tmp_path):
             aliases = list_aliases()
@@ -122,6 +157,7 @@ class TestAliasStorage:
 # ---------------------------------------------------------------------------
 # resolve_game_id
 # ---------------------------------------------------------------------------
+
 
 class TestResolveGameId:
     def test_resolves_known_alias(self, tmp_path):

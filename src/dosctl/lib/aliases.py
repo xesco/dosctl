@@ -11,7 +11,7 @@ from typing import Dict
 from dosctl.config import CONFIG_DIR
 
 ALIASES_FILE = CONFIG_DIR / "aliases.json"
-_ALIAS_RE = re.compile(r'^[a-z0-9][a-z0-9\-]*$')
+_ALIAS_RE = re.compile(r"^[a-z0-9][a-z0-9\-]*$")
 
 
 def _validate_alias(alias: str) -> None:
@@ -58,6 +58,21 @@ def remove_alias(alias: str) -> None:
         raise KeyError(alias)
     del aliases[alias]
     _save(aliases)
+
+
+def remove_aliases_for_game_id(game_id: str) -> list[str]:
+    """Remove all aliases that point to the given game ID."""
+    aliases = _load()
+    removed = [alias for alias, entry in aliases.items() if entry["id"] == game_id]
+
+    if not removed:
+        return []
+
+    for alias in removed:
+        del aliases[alias]
+
+    _save(aliases)
+    return sorted(removed)
 
 
 def list_aliases() -> Dict[str, Dict[str, str]]:

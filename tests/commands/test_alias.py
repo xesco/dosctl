@@ -1,4 +1,5 @@
 """CLI tests for the alias command and its resolution in other commands."""
+
 import json
 from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
@@ -7,6 +8,10 @@ from dosctl.main import cli
 
 def _patch_aliases(tmp_path):
     return patch("dosctl.lib.aliases.ALIASES_FILE", tmp_path / "aliases.json")
+
+
+def _patch_play_config(tmp_path):
+    return patch("dosctl.lib.config_store.CONFIG_FILE", tmp_path / "play_config.json")
 
 
 def _make_collection(game_id="abc12345", game_name="Doom"):
@@ -20,6 +25,7 @@ def _make_collection(game_id="abc12345", game_name="Doom"):
 # ---------------------------------------------------------------------------
 # dosctl alias set
 # ---------------------------------------------------------------------------
+
 
 class TestAliasSet:
     def test_set_creates_alias(self, tmp_path):
@@ -66,6 +72,7 @@ class TestAliasSet:
 # dosctl alias remove
 # ---------------------------------------------------------------------------
 
+
 class TestAliasRemove:
     def test_remove_existing_alias(self, tmp_path):
         runner = CliRunner()
@@ -89,6 +96,7 @@ class TestAliasRemove:
 # ---------------------------------------------------------------------------
 # dosctl alias list
 # ---------------------------------------------------------------------------
+
 
 class TestAliasList:
     def test_list_empty(self, tmp_path):
@@ -125,10 +133,13 @@ class TestAliasList:
 # Alias resolution in other commands
 # ---------------------------------------------------------------------------
 
+
 class TestAliasResolutionInCommands:
     """Verify that play, inspect, delete, net host, and net join resolve aliases."""
 
-    def _setup_alias(self, tmp_path, alias="doom", game_id="abc12345", game_name="Doom"):
+    def _setup_alias(
+        self, tmp_path, alias="doom", game_id="abc12345", game_name="Doom"
+    ):
         """Write an alias directly without going through the CLI."""
         f = tmp_path / "aliases.json"
         f.write_text(json.dumps({alias: {"id": game_id, "name": game_name}}))
@@ -146,7 +157,9 @@ class TestAliasResolutionInCommands:
         mock_install.return_value = ({}, game_path)
 
         with _patch_aliases(tmp_path):
-            with patch("dosctl.commands.play.get_or_prompt_command", return_value="GAME.EXE"):
+            with patch(
+                "dosctl.commands.play.get_or_prompt_command", return_value="GAME.EXE"
+            ):
                 with patch("dosctl.commands.play.executable_exists", return_value=True):
                     with patch("dosctl.commands.play.set_game_command"):
                         result = CliRunner().invoke(cli, ["play", "doom"])
@@ -190,13 +203,74 @@ class TestAliasResolutionInCommands:
         # Reached the confirmation prompt — alias was resolved correctly
         assert "Doom" in result.output or "abc12345" in result.output
 
+    @patch("dosctl.commands.delete.ensure_cache", lambda f: f)
+    def test_delete_removes_aliases_for_deleted_game(self, tmp_path):
+        self._setup_alias(tmp_path)
+        game_path = tmp_path / "abc12345"
+        game_path.mkdir()
+        (tmp_path / "play_config.json").write_text(json.dumps({"abc12345": "DOOM.EXE"}))
+
+        with _patch_aliases(tmp_path):
+            with _patch_play_config(tmp_path):
+                with patch("dosctl.commands.delete.INSTALLED_DIR", tmp_path):
+                    with patch("dosctl.commands.delete.DOWNLOADS_DIR", tmp_path):
+                        with patch(
+                            "dosctl.lib.decorators.create_collection"
+                        ) as mock_col:
+                            mock_col.return_value = _make_collection()
+                            result = CliRunner().invoke(
+                                cli, ["delete", "abc12345"], input="y\n"
+                            )
+
+            aliases = json.loads((tmp_path / "aliases.json").read_text())
+            play_config = json.loads((tmp_path / "play_config.json").read_text())
+
+        assert result.exit_code == 0
+        assert "Removed aliases: doom" in result.output
+        assert "Removed saved launch command" in result.output
+        assert aliases == {}
+        assert play_config == {}
+
+    @patch("dosctl.commands.delete.ensure_cache", lambda f: f)
+    def test_delete_omits_saved_command_message_when_none_exists(self, tmp_path):
+        self._setup_alias(tmp_path)
+        game_path = tmp_path / "abc12345"
+        game_path.mkdir()
+        (tmp_path / "play_config.json").write_text(
+            json.dumps({"deadbeef": "QUAKE.EXE"})
+        )
+
+        with _patch_aliases(tmp_path):
+            with _patch_play_config(tmp_path):
+                with patch("dosctl.commands.delete.INSTALLED_DIR", tmp_path):
+                    with patch("dosctl.commands.delete.DOWNLOADS_DIR", tmp_path):
+                        with patch(
+                            "dosctl.lib.decorators.create_collection"
+                        ) as mock_col:
+                            mock_col.return_value = _make_collection()
+                            result = CliRunner().invoke(
+                                cli, ["delete", "abc12345"], input="y\n"
+                            )
+
+            play_config = json.loads((tmp_path / "play_config.json").read_text())
+
+        assert result.exit_code == 0
+        assert "Removed saved launch command" not in result.output
+        assert play_config == {"deadbeef": "QUAKE.EXE"}
+
     @patch("dosctl.commands.net.get_dosbox_launcher")
     @patch("dosctl.commands.net.is_dosbox_installed", return_value=True)
     @patch("dosctl.commands.net.install_game")
     @patch("dosctl.commands.net.get_local_ip", return_value="192.168.1.1")
     @patch("dosctl.lib.decorators.create_collection")
     def test_net_host_resolves_alias(
-        self, mock_col, mock_local_ip, mock_install, mock_dosbox, mock_launcher, tmp_path
+        self,
+        mock_col,
+        mock_local_ip,
+        mock_install,
+        mock_dosbox,
+        mock_launcher,
+        tmp_path,
     ):
         self._setup_alias(tmp_path)
         game_path = tmp_path / "game"
@@ -204,7 +278,9 @@ class TestAliasResolutionInCommands:
         mock_install.return_value = ({}, game_path)
 
         with _patch_aliases(tmp_path):
-            with patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE"):
+            with patch(
+                "dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE"
+            ):
                 with patch("dosctl.commands.net.executable_exists", return_value=True):
                     with patch("dosctl.commands.net.set_game_command"):
                         result = CliRunner().invoke(cli, ["net", "host", "doom"])
@@ -226,7 +302,9 @@ class TestAliasResolutionInCommands:
         mock_install.return_value = ({}, game_path)
 
         with _patch_aliases(tmp_path):
-            with patch("dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE"):
+            with patch(
+                "dosctl.commands.net.get_or_prompt_command", return_value="GAME.EXE"
+            ):
                 with patch("dosctl.commands.net.executable_exists", return_value=True):
                     with patch("dosctl.commands.net.set_game_command"):
                         result = CliRunner().invoke(
