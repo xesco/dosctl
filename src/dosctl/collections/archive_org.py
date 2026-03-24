@@ -217,12 +217,6 @@ class ArchiveOrgCollection(BaseCollection):
                     member.filename, install_root=temp_install_path
                 )
 
-                if self._is_zip_symlink(member):
-                    raise ValueError(
-                        "Archive contains an unsupported symlink entry: "
-                        f"'{member.filename}'"
-                    )
-
                 if member.is_dir():
                     target_path.mkdir(parents=True, exist_ok=True)
                     continue

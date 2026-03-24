@@ -171,8 +171,8 @@ class TestArchiveOrgCollection:
             assert not install_path.exists()
             assert not outside_path.exists()
 
-    def test_unzip_game_rejects_symlinks_and_stays_atomic(self):
-        """Symlink entries should be rejected without leaving partial installs."""
+    def test_unzip_game_extracts_symlink_entries_as_regular_files(self):
+        """Symlink-flagged entries should be extracted as regular files (common in DOS ZIPs)."""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             downloads_dir = temp_path / "downloads"
@@ -196,12 +196,13 @@ class TestArchiveOrgCollection:
                 symlink_info = zipfile.ZipInfo("GAME.EXE")
                 symlink_info.create_system = 3
                 symlink_info.external_attr = 0o120777 << 16
-                zf.writestr(symlink_info, "GOOD.EXE")
+                zf.writestr(symlink_info, "fake symlink content")
 
-            with pytest.raises(ValueError, match="symlink entry"):
-                collection.unzip_game("test123", downloads_dir, install_path)
+            collection.unzip_game("test123", downloads_dir, install_path)
 
-            assert not install_path.exists()
+            assert install_path.exists()
+            assert (install_path / "GOOD.EXE").read_text() == "good"
+            assert (install_path / "GAME.EXE").read_text() == "fake symlink content"
 
 
 class TestCollectionFactory:
