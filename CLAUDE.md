@@ -28,12 +28,12 @@ python -m build
 ## Architecture
 
 ### CLI Layer (Click framework)
-- **Entry point:** `src/dosctl/main.py` — defines the `cli` Click group with subcommands: list, search, play, inspect, delete, refresh, net
-- **Commands:** `src/dosctl/commands/` — each file is one subcommand (net.py is a Click subgroup with host/join)
+- **Entry point:** `src/dosctl/main.py` — defines the `cli` Click group with subcommands: list, search, play, inspect, delete, refresh, net, alias, info, version
+- **Commands:** `src/dosctl/commands/` — each file is one subcommand (net.py and alias.py are Click subgroups)
 
 ### Net Command (`src/dosctl/commands/net.py`)
 - Click subgroup with two subcommands: `host` and `join`
-- `host` — starts DOSBox as IPX server. LAN mode by default; `--internet/-i` enables UPnP port mapping, public IP detection, and discovery code generation. Additional flags: `--public-ip/-I` (skip IP detection), `--no-upnp/-U` (skip UPnP), `--port/-p`, `--configure/-c`
+- `host` — starts DOSBox as IPX server. LAN mode by default; `--internet/-i` enables UPnP port mapping, public IP detection, and discovery code generation. Additional flags: `--public-ip/-I` (skip IP detection), `--no-upnp/-U` (skip UPnP), `--port/-p`, `--configure/-c`, `--no-exec/-n` (DOSBox prompt only)
 - `join` — connects to an IPX server. Accepts raw IP (LAN) or discovery code (internet). Uses `resolve_host()` to auto-detect format. Flags: `--port/-p`, `--configure/-c`
 - `_setup_internet_hosting()` orchestrates UPnP → CGNAT detection → public IP → discovery code display
 - `_prepare_game()` and `_launch_net_game()` are shared helpers for game installation and DOSBox launch
@@ -74,10 +74,21 @@ Most commands are wrapped with `@ensure_cache`, which automatically creates dire
 - SSDP discovery, SOAP port mapping, external IP retrieval
 - `UPnPPortMapper` class with atexit cleanup of registered mappings
 
+### Alias Command (`src/dosctl/commands/alias.py`)
+- Click subgroup with three subcommands: `set`, `remove`, `list`
+- `set ALIAS_NAME GAME_ID` — creates/updates an alias; validates format (lowercase letters, digits, hyphens) and that the game exists
+- `remove ALIAS_NAME` — deletes an alias
+- `list` — shows all aliases with their game IDs and names
+
+### Info Command (`src/dosctl/commands/info.py`)
+- `dosctl info GAME_ID|ALIAS` — shows game metadata (name, ID, year, alias if set, status)
+- Status: "Not downloaded", "Downloaded", or "Installed"; shows archive/install path and saved default command
+
 ### Other Key Modules
-- `config.py` — platform-aware directory paths (config, data, collections, downloads, installed)
+- `config.py` — platform-aware directory paths (config, data, collections, downloads, installed); also defines `IPX_CONF_PATH` and `DEFAULT_COLLECTION_SOURCE`
 - `lib/game.py` — game download, extraction, and installation
-- `lib/config_store.py` — persists selected executables per game in JSON
+- `lib/aliases.py` — alias storage in `aliases.json`; `set_alias()`, `remove_alias()`, `remove_aliases_for_game_id()`, `list_aliases()`, `resolve_game_id()` (resolves alias or passes through raw game ID)
+- `lib/config_store.py` — persists chosen executable/command per game in `play_config.json` (migrated from old `run_config.json`)
 - `lib/executables.py` — finds .exe/.com/.bat files in game directories; shared executable selection/prompting logic used by both play and net commands
 - `lib/display.py` — terminal display formatting for game listings
 
