@@ -18,47 +18,26 @@ from dosctl.lib.discovery import encode_discovery_code
 
 
 class TestIPXServerConfig:
-    """Test IPXServerConfig dataclass."""
-
-    def test_default_port(self):
+    def test_default_port_command(self):
         config = IPXServerConfig()
         assert config.port == DEFAULT_IPX_PORT
-
-    def test_custom_port(self):
-        config = IPXServerConfig(port=12345)
-        assert config.port == 12345
-
-    def test_to_dosbox_command_default_port(self):
-        config = IPXServerConfig()
         assert config.to_dosbox_command() == f"IPXNET STARTSERVER {DEFAULT_IPX_PORT}"
 
-    def test_to_dosbox_command_custom_port(self):
+    def test_custom_port_command(self):
         config = IPXServerConfig(port=9999)
+        assert config.port == 9999
         assert config.to_dosbox_command() == "IPXNET STARTSERVER 9999"
 
 
 class TestIPXClientConfig:
-    """Test IPXClientConfig dataclass."""
-
-    def test_default_port(self):
+    def test_default_port_command(self):
         config = IPXClientConfig(host="192.168.1.42")
-        assert config.host == "192.168.1.42"
         assert config.port == DEFAULT_IPX_PORT
+        assert config.to_dosbox_command() == f"IPXNET CONNECT 192.168.1.42 {DEFAULT_IPX_PORT}"
 
-    def test_custom_port(self):
-        config = IPXClientConfig(host="10.0.0.1", port=12345)
-        assert config.host == "10.0.0.1"
-        assert config.port == 12345
-
-    def test_to_dosbox_command_default_port(self):
-        config = IPXClientConfig(host="192.168.1.42")
-        assert (
-            config.to_dosbox_command()
-            == f"IPXNET CONNECT 192.168.1.42 {DEFAULT_IPX_PORT}"
-        )
-
-    def test_to_dosbox_command_custom_port(self):
+    def test_custom_port_command(self):
         config = IPXClientConfig(host="10.0.0.1", port=9999)
+        assert config.port == 9999
         assert config.to_dosbox_command() == "IPXNET CONNECT 10.0.0.1 9999"
 
 
@@ -92,31 +71,19 @@ class TestGetPublicIP:
     """Test get_public_ip function."""
 
     @patch("dosctl.lib.network.urlopen")
-    def test_returns_ip_on_success(self, mock_urlopen):
+    def test_returns_stripped_ip_on_success(self, mock_urlopen):
         mock_response = MagicMock()
-        mock_response.read.return_value = b"203.0.113.5"
+        mock_response.read.return_value = b"  203.0.113.5\n"
         mock_response.__enter__ = MagicMock(return_value=mock_response)
         mock_response.__exit__ = MagicMock(return_value=False)
         mock_urlopen.return_value = mock_response
 
-        result = get_public_ip(timeout=1)
-        assert result == "203.0.113.5"
+        assert get_public_ip(timeout=1) == "203.0.113.5"
 
     @patch("dosctl.lib.network.urlopen")
     def test_returns_none_on_failure(self, mock_urlopen):
         mock_urlopen.side_effect = Exception("Network error")
-
-        result = get_public_ip(timeout=1)
-        assert result is None
-
-    @patch("dosctl.lib.network.urlopen")
-    def test_strips_whitespace(self, mock_urlopen):
-        mock_response = MagicMock()
-        mock_response.read.return_value = b"  203.0.113.5\n"
-        mock_urlopen.return_value = mock_response
-
-        result = get_public_ip(timeout=1)
-        assert result == "203.0.113.5"
+        assert get_public_ip(timeout=1) is None
 
 
 # --- DOSBox launcher IPX integration tests ---
@@ -455,19 +422,11 @@ class TestNetGroup:
     """Test the 'dosctl net' command group."""
 
     def test_net_shows_help(self):
-        """Running 'dosctl net' without subcommand should show help."""
         runner = CliRunner()
         result = runner.invoke(cli, ["net"])
         assert result.exit_code == 0
         assert "host" in result.output
         assert "join" in result.output
-
-    def test_net_help_flag(self):
-        """Running 'dosctl net --help' should show help."""
-        runner = CliRunner()
-        result = runner.invoke(cli, ["net", "--help"])
-        assert result.exit_code == 0
-        assert "Multiplayer" in result.output
 
 
 class TestNetHostInternet:

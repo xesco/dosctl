@@ -145,7 +145,7 @@ class TestPortMapping:
 
     @patch("dosctl.lib.upnp.urlopen")
     def test_add_port_mapping_failure(self, mock_urlopen):
-        """Should return False on SOAP error."""
+        """Should return False on SOAP error and store the error."""
         mock_urlopen.side_effect = Exception("SOAP fault")
 
         mapper = self._create_discovered_mapper()
@@ -153,6 +153,7 @@ class TestPortMapping:
 
         assert result is False
         assert len(mapper._registered_mappings) == 0
+        assert mapper._last_error is not None
 
     def test_add_port_mapping_no_gateway(self):
         """Should raise UPnPError when no gateway is discovered."""
@@ -223,17 +224,6 @@ class TestPortMapping:
 
         assert result is False
         assert mock_urlopen.call_count == 1
-
-    @patch("dosctl.lib.upnp.urlopen")
-    def test_add_port_mapping_stores_last_error(self, mock_urlopen):
-        """Should store the last error for diagnostic purposes."""
-        mock_urlopen.side_effect = Exception("some SOAP fault")
-
-        mapper = self._create_discovered_mapper()
-        result = mapper.add_port_mapping(19900, "192.168.1.42")
-
-        assert result is False
-        assert mapper._last_error is not None
 
     @patch("dosctl.lib.upnp.urlopen")
     def test_soap_fault_parsing(self, mock_urlopen):

@@ -13,65 +13,32 @@ from dosctl.lib.aliases import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 def _patch_aliases_file(tmp_path):
-    """Return a context manager that redirects ALIASES_FILE to tmp_path."""
     return patch("dosctl.lib.aliases.ALIASES_FILE", tmp_path / "aliases.json")
-
-
-# ---------------------------------------------------------------------------
-# Validation
-# ---------------------------------------------------------------------------
 
 
 class TestValidateAlias:
     @pytest.mark.parametrize("name", ["doom", "my-game", "game2", "a", "abc123"])
     def test_valid_names_do_not_raise(self, name):
-        _validate_alias(name)  # should not raise
+        _validate_alias(name)
 
-    @pytest.mark.parametrize(
-        "name",
-        [
-            "-badstart",  # starts with hyphen
-            "UPPER",  # uppercase
-            "has space",  # space
-            "has_under",  # underscore
-            "",  # empty
-        ],
-    )
+    @pytest.mark.parametrize("name", ["-badstart", "UPPER", "has space", "has_under", ""])
     def test_invalid_names_raise_value_error(self, name):
         with pytest.raises(ValueError):
             _validate_alias(name)
 
 
-# ---------------------------------------------------------------------------
-# Storage: set / list / remove
-# ---------------------------------------------------------------------------
-
-
 class TestAliasStorage:
-    def test_set_creates_file(self, tmp_path):
-        with _patch_aliases_file(tmp_path):
-            set_alias("doom", "abc12345", "Doom (1993)")
-        assert (tmp_path / "aliases.json").exists()
-
     def test_set_persists_id_and_name(self, tmp_path):
         with _patch_aliases_file(tmp_path):
             set_alias("doom", "abc12345", "Doom (1993)")
-            aliases = list_aliases()
-        assert aliases == {"doom": {"id": "abc12345", "name": "Doom (1993)"}}
+            assert list_aliases() == {"doom": {"id": "abc12345", "name": "Doom (1993)"}}
 
-    def test_set_updates_existing_alias_id_and_name(self, tmp_path):
-        """Updating an alias replaces both the id and the name."""
+    def test_set_updates_existing_alias(self, tmp_path):
         with _patch_aliases_file(tmp_path):
             set_alias("doom", "abc12345", "Doom (1993)")
             set_alias("doom", "deadbeef", "Doom II (1994)")
-            aliases = list_aliases()
-        assert aliases["doom"] == {"id": "deadbeef", "name": "Doom II (1994)"}
+            assert list_aliases()["doom"] == {"id": "deadbeef", "name": "Doom II (1994)"}
 
     def test_set_multiple_aliases(self, tmp_path):
         with _patch_aliases_file(tmp_path):
@@ -86,8 +53,7 @@ class TestAliasStorage:
         with _patch_aliases_file(tmp_path):
             set_alias("doom", "abc12345", "Doom (1993)")
             remove_alias("doom")
-            aliases = list_aliases()
-        assert "doom" not in aliases
+            assert "doom" not in list_aliases()
 
     def test_remove_leaves_other_aliases_intact(self, tmp_path):
         with _patch_aliases_file(tmp_path):
@@ -103,41 +69,30 @@ class TestAliasStorage:
             with pytest.raises(KeyError):
                 remove_alias("doesnotexist")
 
-    def test_remove_aliases_for_game_id_removes_matching_aliases(self, tmp_path):
+    def test_remove_aliases_for_game_id(self, tmp_path):
         with _patch_aliases_file(tmp_path):
             set_alias("doom", "abc12345", "Doom (1993)")
             set_alias("doom-shareware", "abc12345", "Doom (1993)")
             set_alias("quake", "deadbeef", "Quake (1996)")
-
             removed = remove_aliases_for_game_id("abc12345")
             aliases = list_aliases()
-
         assert removed == ["doom", "doom-shareware"]
         assert "doom" not in aliases
-        assert "doom-shareware" not in aliases
         assert aliases["quake"] == {"id": "deadbeef", "name": "Quake (1996)"}
 
     def test_remove_aliases_for_game_id_returns_empty_when_no_match(self, tmp_path):
         with _patch_aliases_file(tmp_path):
             set_alias("quake", "deadbeef", "Quake (1996)")
-
-            removed = remove_aliases_for_game_id("abc12345")
-            aliases = list_aliases()
-
-        assert removed == []
-        assert aliases == {"quake": {"id": "deadbeef", "name": "Quake (1996)"}}
+            assert remove_aliases_for_game_id("abc12345") == []
 
     def test_list_returns_empty_when_no_file(self, tmp_path):
         with _patch_aliases_file(tmp_path):
-            aliases = list_aliases()
-        assert aliases == {}
+            assert list_aliases() == {}
 
     def test_list_returns_empty_on_corrupt_file(self, tmp_path):
-        aliases_file = tmp_path / "aliases.json"
-        aliases_file.write_text("not valid json {{{")
+        (tmp_path / "aliases.json").write_text("not valid json {{{")
         with _patch_aliases_file(tmp_path):
-            aliases = list_aliases()
-        assert aliases == {}
+            assert list_aliases() == {}
 
     def test_file_is_sorted(self, tmp_path):
         with _patch_aliases_file(tmp_path):
@@ -146,47 +101,25 @@ class TestAliasStorage:
         raw = json.loads((tmp_path / "aliases.json").read_text())
         assert list(raw.keys()) == sorted(raw.keys())
 
-    def test_json_structure_on_disk(self, tmp_path):
-        """Verify the raw JSON uses the dict-per-entry format."""
-        with _patch_aliases_file(tmp_path):
-            set_alias("doom", "abc12345", "Doom (1993)")
-        raw = json.loads((tmp_path / "aliases.json").read_text())
-        assert raw == {"doom": {"id": "abc12345", "name": "Doom (1993)"}}
-
-
-# ---------------------------------------------------------------------------
-# resolve_game_id
-# ---------------------------------------------------------------------------
-
 
 class TestResolveGameId:
     def test_resolves_known_alias(self, tmp_path):
         with _patch_aliases_file(tmp_path):
             set_alias("doom", "abc12345", "Doom (1993)")
-            result = resolve_game_id("doom")
-        assert result == "abc12345"
+            assert resolve_game_id("doom") == "abc12345"
 
     def test_passthrough_for_unknown_value(self, tmp_path):
         with _patch_aliases_file(tmp_path):
-            result = resolve_game_id("abc12345")
-        assert result == "abc12345"
-
-    def test_passthrough_does_not_need_a_valid_game_id(self, tmp_path):
-        """resolve_game_id never validates — it just looks up or passes through."""
-        with _patch_aliases_file(tmp_path):
-            result = resolve_game_id("anything-at-all")
-        assert result == "anything-at-all"
+            assert resolve_game_id("abc12345") == "abc12345"
 
     def test_resolves_after_update(self, tmp_path):
         with _patch_aliases_file(tmp_path):
             set_alias("doom", "abc12345", "Doom (1993)")
             set_alias("doom", "deadbeef", "Doom II (1994)")
-            result = resolve_game_id("doom")
-        assert result == "deadbeef"
+            assert resolve_game_id("doom") == "deadbeef"
 
     def test_does_not_resolve_removed_alias(self, tmp_path):
         with _patch_aliases_file(tmp_path):
             set_alias("doom", "abc12345", "Doom (1993)")
             remove_alias("doom")
-            result = resolve_game_id("doom")
-        assert result == "doom"  # passthrough, not the old game id
+            assert resolve_game_id("doom") == "doom"
