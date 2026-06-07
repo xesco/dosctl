@@ -1,16 +1,19 @@
 import hashlib
 import re
-import requests
 import shutil
 import stat
 import tempfile
-from pathlib import Path
-from typing import List, Dict, Optional
 import zipfile
+from pathlib import Path
+from typing import Dict, List, Optional
 from urllib.parse import quote, unquote
+
+import click
+import requests
 from tqdm import tqdm
 
 from .base import BaseCollection
+
 
 class ArchiveOrgCollection(BaseCollection):
     """
@@ -24,6 +27,7 @@ class ArchiveOrgCollection(BaseCollection):
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.collection_name = collection_name
         self._games_data: List[Dict] = []
+        self._games_index: Dict[str, Dict] = {}
 
         # The download URL for a file is different from the source URL of the list.
         # We derive the base download URL from the source URL's item name.
@@ -38,12 +42,12 @@ class ArchiveOrgCollection(BaseCollection):
         """
         cache_file = self.cache_dir / "games.txt"
         if force_refresh or not cache_file.exists():
-            print(f"Downloading game list from {self.source}...")
+            click.echo(f"Downloading game list from {self.source}...")
             headers = {'User-Agent': 'Mozilla/5.0'}
             response = requests.get(self.source, headers=headers, timeout=30)
             response.raise_for_status()
             self._build_games_cache(response.text, cache_file)
-            print("✅ Game list refreshed successfully.")
+            click.echo("✅ Game list refreshed successfully.")
 
     def _build_games_cache(self, html_content: str, cache_file: Path) -> None:
         """
@@ -88,7 +92,8 @@ class ArchiveOrgCollection(BaseCollection):
             return
 
         self._games_data = []
-        with open(cache_file, "r", encoding="utf-8") as f:
+        self._games_index = {}
+        with open(cache_file, encoding="utf-8") as f:
             for line in f:
                 line = line.rstrip("\n")
                 if not line:
@@ -109,13 +114,16 @@ class ArchiveOrgCollection(BaseCollection):
             self._populate_games_data()
         return self._games_data
 
+    def _ensure_index(self) -> None:
+        """(Re)build the id->game index when it is out of sync with _games_data."""
+        if len(self._games_index) != len(self._games_data):
+            self._games_index = {game["id"]: game for game in self._games_data}
+
     def find_game(self, game_id: str) -> Optional[Dict]:
         if not self._games_data:
             self._populate_games_data()
-        for game in self._games_data:
-            if game["id"] == game_id:
-                return game
-        return None
+        self._ensure_index()
+        return self._games_index.get(game_id)
 
     def get_download_url(self, game_id: str) -> Optional[str]:
         """
@@ -149,32 +157,45 @@ class ArchiveOrgCollection(BaseCollection):
         local_zip_path = destination_path / filename
 
         if local_zip_path.exists() and not force:
-            print(f"'{filename}' already exists in '{destination_path}'. Use --force to overwrite.")
+            click.echo(f"'{filename}' already exists in '{destination_path}'. Use --force to overwrite.")
             return local_zip_path
 
         headers = {'User-Agent': 'Mozilla/5.0'}
 
-        # Use a try...except block for more specific error handling
         try:
             with requests.get(download_url, headers=headers, stream=True, timeout=30) as r:
                 r.raise_for_status()
 
                 total_size = int(r.headers.get('content-length', 0))
 
+                bytes_written = 0
                 with tqdm.wrapattr(open(local_zip_path, "wb"), "write",
                                  miniters=1,
                                  total=total_size,
                                  desc=f"Downloading '{filename}'") as fout:
                     for chunk in r.iter_content(chunk_size=8192):
                         fout.write(chunk)
+                        bytes_written += len(chunk)
 
-            print(f"Successfully downloaded '{filename}'")
-        except requests.exceptions.RequestException as e:
-            print(f"\nError downloading '{filename}': {e}")
-            # Clean up partially downloaded file
-            if local_zip_path.exists():
-                local_zip_path.unlink()
+            # Verify the transfer is complete. A dropped connection can end the
+            # stream early, leaving a truncated (corrupt) zip that still looks
+            # like a valid file on disk; reject it instead of "installing" it.
+            if total_size and bytes_written < total_size:
+                raise OSError(
+                    f"incomplete download: expected {total_size} bytes, "
+                    f"got {bytes_written}"
+                )
+
+            click.echo(f"Successfully downloaded '{filename}'")
+        except (requests.exceptions.RequestException, OSError) as e:
+            click.echo(f"\nError downloading '{filename}': {e}", err=True)
+            # Clean up the partially downloaded file
+            local_zip_path.unlink(missing_ok=True)
             return None
+        except BaseException:
+            # Clean up the partial file on interrupt (e.g. Ctrl-C) before re-raising
+            local_zip_path.unlink(missing_ok=True)
+            raise
 
         return local_zip_path
 
@@ -192,10 +213,10 @@ class ArchiveOrgCollection(BaseCollection):
         if not zip_filepath.exists():
             raise FileNotFoundError(f"Downloaded game zip not found at '{zip_filepath}'")
 
-        print(f"Unzipping '{zip_filename}' to '{install_path}'...")
+        click.echo(f"Unzipping '{zip_filename}' to '{install_path}'...")
         with zipfile.ZipFile(zip_filepath, 'r') as zip_ref:
             self._extract_zip_safely(zip_ref, install_path)
-        print("Unzip complete.")
+        click.echo("Unzip complete.")
 
     def _extract_zip_safely(self, zip_ref: zipfile.ZipFile, install_path: Path) -> None:
         """Extract a ZIP into the install path without allowing path escapes.
@@ -265,27 +286,3 @@ class TotalDOSCollectionRelease14(ArchiveOrgCollection):
         Builds the download URL specific to TDC Release 14 structure.
         """
         return f"https://archive.org/download/{self.item_name}/TDC_Release_14.zip/{encoded_full_path}"
-
-
-# Example of how to add a new version:
-#
-# class TotalDOSCollectionRelease15(ArchiveOrgCollection):
-#     """
-#     Specific implementation for Total DOS Collection Release 15.
-#     """
-#
-#     def __init__(self, source: str, cache_dir: str):
-#         super().__init__(source, cache_dir, "Total DOS Collection Release 15")
-#
-#     def _build_download_url(self, encoded_full_path: str) -> str:
-#         """
-#         Builds the download URL specific to TDC Release 15 structure.
-#         """
-#         return f"https://archive.org/download/{self.item_name}/TDC_Release_15.zip/{encoded_full_path}"
-#
-#     def _parse_filename(self, filename: str) -> Dict:
-#         """
-#         Override if Release 15 has different filename patterns.
-#         """
-#         # Custom parsing logic for Release 15 if needed
-#         return super()._parse_filename(filename)
