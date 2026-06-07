@@ -1,7 +1,8 @@
-"""Tests for the --version flag on the CLI."""
+"""Tests for the --version flag and the `version` subcommand on the CLI."""
 from click.testing import CliRunner
-from dosctl.main import cli
+
 import dosctl
+from dosctl.main import cli
 
 
 class TestVersionCommand:
@@ -15,3 +16,10 @@ class TestVersionCommand:
         runner = CliRunner()
         result = runner.invoke(cli, ["--version"])
         assert "DOSCtl" in result.output
+
+    def test_version_subcommand_is_registered(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["version"])
+        assert result.exit_code == 0
+        assert "DOSCtl" in result.output
+        assert dosctl.__version__ in result.output
