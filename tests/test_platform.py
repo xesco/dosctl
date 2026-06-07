@@ -4,10 +4,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from dosctl.lib.platform import (
-    UnixPlatform,
     MacOSPlatform,
-    WindowsPlatform,
     PlatformFactory,
+    UnixPlatform,
+    WindowsPlatform,
     get_platform,
 )
 

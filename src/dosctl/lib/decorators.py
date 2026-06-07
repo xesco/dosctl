@@ -1,7 +1,8 @@
 from functools import wraps
-import click
+
 from dosctl.collections.factory import create_collection
-from dosctl.config import DEFAULT_COLLECTION_SOURCE, COLLECTION_CACHE_DIR, ensure_dirs_exist
+from dosctl.config import COLLECTION_CACHE_DIR, DEFAULT_COLLECTION_SOURCE, ensure_dirs_exist
+
 
 def ensure_cache(f):
     """
@@ -14,7 +15,7 @@ def ensure_cache(f):
         collection = create_collection(
             "tdc_release_14",
             source=DEFAULT_COLLECTION_SOURCE,
-            cache_dir=COLLECTION_CACHE_DIR
+            cache_dir=COLLECTION_CACHE_DIR,
         )
         # This will auto-refresh if the cache is missing
         collection.ensure_cache_is_present()

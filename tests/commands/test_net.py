@@ -1,18 +1,18 @@
 """Tests for the net command (IPX multiplayer networking)."""
 
-from pathlib import Path
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock, patch
+
 from click.testing import CliRunner
-from dosctl.main import cli
+
+from dosctl.lib.discovery import encode_discovery_code
 from dosctl.lib.network import (
-    IPXServerConfig,
-    IPXClientConfig,
     DEFAULT_IPX_PORT,
+    IPXClientConfig,
+    IPXServerConfig,
     get_local_ip,
     get_public_ip,
 )
-from dosctl.lib.discovery import encode_discovery_code
-
+from dosctl.main import cli
 
 # --- Network dataclass tests ---
 
@@ -228,7 +228,7 @@ class TestEnsureIPXConf:
         conf_path.write_text("[ipx]\nipx=true\n# custom comment\n")
 
         with patch("dosctl.config.IPX_CONF_PATH", conf_path):
-            result = _ensure_ipx_conf()
+            _ensure_ipx_conf()
 
         content = conf_path.read_text()
         assert "# custom comment" in content

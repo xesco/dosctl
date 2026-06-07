@@ -1,11 +1,18 @@
 """Tests for configuration management."""
-import pytest
-from unittest.mock import patch, Mock
-from pathlib import Path
 import tempfile
-import os
+from pathlib import Path
+from unittest.mock import patch
 
-from dosctl.config import ensure_dirs_exist, DOWNLOADS_DIR, INSTALLED_DIR, CONFIG_DIR, DATA_DIR, COLLECTION_CACHE_DIR
+import pytest
+
+from dosctl.config import (
+    COLLECTION_CACHE_DIR,
+    CONFIG_DIR,
+    DATA_DIR,
+    DOWNLOADS_DIR,
+    INSTALLED_DIR,
+    ensure_dirs_exist,
+)
 
 
 class TestConfigModule:

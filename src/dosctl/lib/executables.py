@@ -1,8 +1,9 @@
 """Utilities for handling DOS game executables."""
 
-import click
 from pathlib import Path
 from typing import List, Optional
+
+import click
 
 from .config_store import get_game_command
 from .platform import get_platform

@@ -1,13 +1,13 @@
 """Tests for UPnP port mapping."""
 
-from unittest.mock import patch, MagicMock, call
-from urllib.error import HTTPError
 from email.message import Message
 from io import BytesIO
-from dosctl.lib.upnp import UPnPPortMapper, UPnPError
+from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError
 
 import pytest
 
+from dosctl.lib.upnp import UPnPError, UPnPPortMapper
 
 # Minimal valid SSDP response
 _SSDP_RESPONSE = (

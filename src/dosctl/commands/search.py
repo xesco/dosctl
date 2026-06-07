@@ -1,7 +1,10 @@
-import click
 import re
+
+import click
+
 from dosctl.lib.decorators import ensure_cache
-from dosctl.lib.display import sort_games, display_games
+from dosctl.lib.display import display_games, sort_games
+
 
 @click.command()
 @click.argument('query', required=False)

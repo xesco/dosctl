@@ -1,6 +1,8 @@
 import click
+
 from dosctl.collections.factory import create_collection
-from dosctl.config import DEFAULT_COLLECTION_SOURCE, COLLECTION_CACHE_DIR, ensure_dirs_exist
+from dosctl.config import COLLECTION_CACHE_DIR, DEFAULT_COLLECTION_SOURCE, ensure_dirs_exist
+
 
 @click.command()
 @click.option('--force', is_flag=True, default=False, help='Force a re-download of the game list.')
@@ -19,7 +21,7 @@ def refresh(force):
     collection = create_collection(
         "tdc_release_14",
         source=DEFAULT_COLLECTION_SOURCE,
-        cache_dir=COLLECTION_CACHE_DIR
+        cache_dir=COLLECTION_CACHE_DIR,
     )
 
     click.echo("Forcing a refresh of the game lists...")

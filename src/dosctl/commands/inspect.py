@@ -1,7 +1,9 @@
 import click
+
 from dosctl.config import INSTALLED_DIR
-from dosctl.lib.decorators import ensure_cache
 from dosctl.lib.aliases import resolve_game_id
+from dosctl.lib.decorators import ensure_cache
+
 
 @click.command()
 @click.argument('game_id', metavar="GAME_ID|ALIAS")

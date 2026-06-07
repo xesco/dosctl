@@ -3,9 +3,8 @@ import json
 from unittest.mock import patch
 
 from dosctl.lib.config_store import (
-    load_play_config,
-    save_play_config,
     get_game_command,
+    load_play_config,
     set_game_command,
 )
 

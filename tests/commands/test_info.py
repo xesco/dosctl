@@ -1,9 +1,10 @@
 """Tests for the info command."""
 import json
-from unittest.mock import patch, MagicMock
-from click.testing import CliRunner
-from dosctl.main import cli
+from unittest.mock import MagicMock, patch
 
+from click.testing import CliRunner
+
+from dosctl.main import cli
 
 GAME = {"id": "abc12345", "name": "Doom (1993)", "year": "1993", "full_path": "Doom (1993).zip"}
 

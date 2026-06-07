@@ -26,14 +26,14 @@ def _load_word_list():
     """
     wordlist_path = Path(__file__).parent / "wordlist.txt"
     words = []
-    with open(wordlist_path, "r") as f:
+    with open(wordlist_path) as f:
         for line in f:
             line = line.strip()
             if line:
                 words.extend(line.split())
     if len(words) != 256:
         raise RuntimeError(
-            "wordlist.txt must contain exactly 256 words, got {}".format(len(words))
+            f"wordlist.txt must contain exactly 256 words, got {len(words)}"
         )
     return words
 
@@ -91,12 +91,12 @@ def encode_discovery_code(ip, port=DEFAULT_IPX_PORT):
     remainder = (b << 16) | (c << 8) | d
     digits = _to_base36(remainder, 5)
 
-    code = "{}-{}".format(word, digits)
+    code = f"{word}-{digits}"
 
     # Append port suffix only if non-default
     if port != DEFAULT_IPX_PORT:
         port_b36 = _to_base36(port, 4)  # 36^4 = 1,679,616 > 65535
-        code = "{}-P{}".format(code, port_b36)
+        code = f"{code}-P{port_b36}"
 
     return code
 
@@ -119,24 +119,24 @@ def decode_discovery_code(code):
     if len(parts) < 2 or len(parts) > 3:
         raise ValueError(
             "Invalid discovery code format: expected WORD-NNNNN "
-            "or WORD-NNNNN-Pxxxx, got '{}'".format(code)
+            f"or WORD-NNNNN-Pxxxx, got '{code}'"
         )
 
     word, digits = parts[0], parts[1]
 
     # Decode word -> first byte
     if word not in _WORD_TO_INDEX:
-        raise ValueError("Unknown word in discovery code: '{}'".format(word))
+        raise ValueError(f"Unknown word in discovery code: '{word}'")
     a = _WORD_TO_INDEX[word]
 
     # Decode base36 digits -> remaining 3 bytes
     if len(digits) != 5:
         raise ValueError(
-            "Invalid digit section: expected 5 characters, got {}".format(len(digits))
+            f"Invalid digit section: expected 5 characters, got {len(digits)}"
         )
     remainder = _from_base36(digits)
     if remainder > 0xFFFFFF:
-        raise ValueError("Digit section out of range: {}".format(digits))
+        raise ValueError(f"Digit section out of range: {digits}")
     b = (remainder >> 16) & 0xFF
     c = (remainder >> 8) & 0xFF
     d = remainder & 0xFF
@@ -148,10 +148,10 @@ def decode_discovery_code(code):
     if len(parts) == 3:
         port_part = parts[2]
         if not port_part.startswith("P") or len(port_part) != 5:
-            raise ValueError("Invalid port section: '{}'".format(port_part))
+            raise ValueError(f"Invalid port section: '{port_part}'")
         port = _from_base36(port_part[1:])
         if port > 65535:
-            raise ValueError("Port out of range: {}".format(port))
+            raise ValueError(f"Port out of range: {port}")
 
     return ip, port
 
@@ -175,7 +175,7 @@ def resolve_host(host_arg, default_port=DEFAULT_IPX_PORT):
         try:
             socket.inet_aton(host_arg)
         except OSError:
-            raise ValueError("Invalid IP address: '{}'".format(host_arg))
+            raise ValueError(f"Invalid IP address: '{host_arg}'") from None
         return host_arg, default_port
 
     # Otherwise try to decode as discovery code

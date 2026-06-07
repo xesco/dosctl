@@ -1,7 +1,8 @@
 """Alias management commands."""
 
 import click
-from dosctl.lib.aliases import set_alias, remove_alias, list_aliases, _validate_alias
+
+from dosctl.lib.aliases import _validate_alias, list_aliases, remove_alias, set_alias
 from dosctl.lib.decorators import ensure_cache
 
 

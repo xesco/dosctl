@@ -4,8 +4,7 @@ import socket
 import struct
 from dataclasses import dataclass
 from typing import Optional
-
-from urllib.request import urlopen, Request
+from urllib.request import Request, urlopen
 
 DEFAULT_IPX_PORT = 19900
 
@@ -78,7 +77,7 @@ def is_cgnat_address(ip):
     """
     try:
         addr = struct.unpack("!I", socket.inet_aton(ip))[0]
-    except (OSError, socket.error):
+    except OSError:
         return False
 
     return (

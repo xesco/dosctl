@@ -1,7 +1,9 @@
 """Tests for the delete command."""
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from click.testing import CliRunner
+
 from dosctl.main import cli
 
 
