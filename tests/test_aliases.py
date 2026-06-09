@@ -1,15 +1,17 @@
 """Unit tests for dosctl.lib.aliases."""
 
 import json
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from dosctl.lib.aliases import (
-    set_alias,
+    _validate_alias,
+    list_aliases,
     remove_alias,
     remove_aliases_for_game_id,
-    list_aliases,
     resolve_game_id,
-    _validate_alias,
+    set_alias,
 )
 
 

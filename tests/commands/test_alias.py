@@ -1,8 +1,10 @@
 """CLI tests for the alias command and its resolution in other commands."""
 
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from click.testing import CliRunner
+
 from dosctl.main import cli
 
 

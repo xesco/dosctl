@@ -1,6 +1,7 @@
 """Utility functions for displaying game information."""
 import click
 
+
 def sort_games(games, sort_by='name'):
     """Sort games by name or year."""
     if sort_by == 'year':

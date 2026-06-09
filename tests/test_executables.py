@@ -1,8 +1,8 @@
 """Tests for executable utilities."""
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
-from dosctl.lib.executables import find_executables, executable_exists
+from dosctl.lib.executables import executable_exists, find_executables
 
 
 class TestFindExecutables:

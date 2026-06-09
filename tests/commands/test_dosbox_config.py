@@ -1,7 +1,8 @@
 """Tests for per-game DOSBox config auto-detection."""
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
 from click.testing import CliRunner
+
 from dosctl.main import cli
 
 
@@ -94,9 +95,9 @@ class TestDosboxLauncherConf:
 
     def test_conf_added_to_command(self, tmp_path):
         """launch_game prepends -conf <path> when conf option is given."""
+
         from dosctl.lib.dosbox import StandardDOSBoxLauncher
         from dosctl.lib.platform import get_platform
-        import subprocess
 
         game_path = tmp_path / "game"
         game_path.mkdir()

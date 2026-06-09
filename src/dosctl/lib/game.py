@@ -1,6 +1,7 @@
-from pathlib import Path
 import click
+
 from dosctl.config import DOWNLOADS_DIR, INSTALLED_DIR
+
 
 def install_game(collection, game_id):
     """
@@ -27,6 +28,6 @@ def install_game(collection, game_id):
 
     # Unzip the game to its final installation directory
     collection.unzip_game(game_id, DOWNLOADS_DIR, game_install_path)
-    
+
     click.echo(f"✅ Successfully installed '{game['name']}'")
     return game, game_install_path

@@ -1,5 +1,5 @@
 """Tests for lib/decorators.py."""
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from dosctl.lib.decorators import ensure_cache
 

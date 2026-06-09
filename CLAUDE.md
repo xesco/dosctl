@@ -23,6 +23,10 @@ python -m pytest tests/test_config.py::test_function_name
 
 # Build package
 python -m build
+
+# Lint (ruff config lives in pyproject.toml)
+ruff check .
+ruff check --fix .
 ```
 
 ## Architecture
@@ -98,4 +102,5 @@ Most commands are wrapped with `@ensure_cache`, which automatically creates dire
 - **Releases:** Automated via semantic-release on push to `main`. Updates version in both `pyproject.toml` and `src/dosctl/__init__.py`.
 - **Python:** Requires >=3.8. Dependencies: click, requests, tqdm.
 - **Testing:** pytest with unittest.mock. Tests use temporary directories for isolation.
+- **Linting:** ruff (config in `pyproject.toml`): rules `E/F/W/I/B/UP`, `target-version = py38`, `line-length = 100` (E501 ignored).
 - **Patterns:** Factory pattern for platform/collection/launcher. ABC for extensibility. Singletons for platform and launcher instances.

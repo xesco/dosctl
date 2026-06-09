@@ -78,7 +78,14 @@ class UnixPlatform(PlatformBase):
 
 
 class MacOSPlatform(UnixPlatform):
-    """Platform implementation for macOS."""
+    """Platform implementation for macOS.
+
+    Unlike UnixPlatform, config and data are deliberately unified under a
+    single ``~/.local/share/dosctl`` directory rather than split across
+    ``~/.config`` and ``~/.local/share``. This keeps everything dosctl writes
+    (game cache, downloads, aliases, play config, ipx.conf) in one place on
+    macOS, where the XDG config/data split is not a native convention.
+    """
 
     def get_config_dir(self) -> Path:
         """Get the configuration directory for macOS."""

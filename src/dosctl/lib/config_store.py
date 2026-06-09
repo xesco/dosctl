@@ -1,6 +1,8 @@
 import json
-from pathlib import Path
 from typing import Optional
+
+import click
+
 from dosctl.config import CONFIG_DIR
 
 CONFIG_FILE = CONFIG_DIR / "play_config.json"
@@ -17,7 +19,7 @@ def load_play_config() -> dict:
     if not CONFIG_FILE.exists():
         return {}
     try:
-        with open(CONFIG_FILE, "r") as f:
+        with open(CONFIG_FILE) as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError):
         # If the file is corrupted or unreadable, treat it as empty
@@ -33,7 +35,7 @@ def save_play_config(config: dict) -> None:
             json.dump(config, f, indent=2)
     except OSError as e:
         # Handle write errors gracefully
-        print(f"Warning: Could not save configuration: {e}")
+        click.echo(f"Warning: Could not save configuration: {e}", err=True)
 
 def get_game_command(game_id: str) -> Optional[str]:
     """Gets the saved command for a specific game."""

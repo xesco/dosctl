@@ -1,11 +1,13 @@
-import click
 import textwrap
-from dosctl.lib.decorators import ensure_cache
-from dosctl.lib.game import install_game
-from dosctl.lib.config_store import set_game_command
-from dosctl.lib.executables import executable_exists, get_or_prompt_command
-from dosctl.lib.dosbox import is_dosbox_installed, get_dosbox_launcher
+
+import click
+
 from dosctl.lib.aliases import resolve_game_id
+from dosctl.lib.config_store import set_game_command
+from dosctl.lib.decorators import ensure_cache
+from dosctl.lib.dosbox import get_dosbox_launcher, is_dosbox_installed
+from dosctl.lib.executables import executable_exists, get_or_prompt_command
+from dosctl.lib.game import install_game
 
 
 @click.command()

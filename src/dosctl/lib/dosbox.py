@@ -3,9 +3,8 @@
 import subprocess
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
-from .network import IPXServerConfig, IPXClientConfig
 from .platform import PlatformBase, get_platform
 
 

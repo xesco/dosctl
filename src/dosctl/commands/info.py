@@ -1,9 +1,10 @@
 """Info command — show catalog metadata and local status for a game."""
 import click
+
 from dosctl.config import DOWNLOADS_DIR, INSTALLED_DIR
-from dosctl.lib.decorators import ensure_cache
-from dosctl.lib.aliases import resolve_game_id, list_aliases
+from dosctl.lib.aliases import list_aliases, resolve_game_id
 from dosctl.lib.config_store import get_game_command
+from dosctl.lib.decorators import ensure_cache
 
 
 @click.command()

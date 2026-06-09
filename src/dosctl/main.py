@@ -1,14 +1,16 @@
 import click
-from .commands.list import list_games
-from .commands.search import search
-from .commands.play import play
-from .commands.inspect import inspect
-from .commands.delete import delete
-from .commands.refresh import refresh
-from .commands.net import net
-from .commands.alias import alias
-from .commands.info import info
+
 from . import __version__
+from .commands.alias import alias
+from .commands.delete import delete
+from .commands.info import info
+from .commands.inspect import inspect
+from .commands.list import list_games
+from .commands.net import net
+from .commands.play import play
+from .commands.refresh import refresh
+from .commands.search import search
+from .commands.version import version
 
 
 @click.group(invoke_without_command=True)
@@ -32,6 +34,7 @@ cli.add_command(refresh)
 cli.add_command(net)
 cli.add_command(alias)
 cli.add_command(info)
+cli.add_command(version)
 
 if __name__ == "__main__":
     cli()

@@ -1,16 +1,17 @@
 """Tests for discovery code encode/decode."""
 
 import pytest
-from dosctl.lib.network import DEFAULT_IPX_PORT
+
 from dosctl.lib.discovery import (
-    WORD_LIST,
     _WORD_TO_INDEX,
-    _to_base36,
+    WORD_LIST,
     _from_base36,
-    encode_discovery_code,
+    _to_base36,
     decode_discovery_code,
+    encode_discovery_code,
     resolve_host,
 )
+from dosctl.lib.network import DEFAULT_IPX_PORT
 
 
 class TestWordList:

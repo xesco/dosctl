@@ -1,8 +1,8 @@
 """Tests for the display utilities."""
-from unittest.mock import patch
 from io import StringIO
+from unittest.mock import patch
 
-from dosctl.lib.display import sort_games, display_games
+from dosctl.lib.display import display_games, sort_games
 
 
 class TestSortGames:

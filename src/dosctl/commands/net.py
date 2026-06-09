@@ -1,23 +1,25 @@
 """Multiplayer networking commands for DOS games via IPX."""
 
-import click
 import textwrap
-from dosctl.lib.decorators import ensure_cache
-from dosctl.lib.game import install_game
+
+import click
+
+from dosctl.lib.aliases import resolve_game_id
 from dosctl.lib.config_store import set_game_command
+from dosctl.lib.decorators import ensure_cache
+from dosctl.lib.discovery import encode_discovery_code, resolve_host
+from dosctl.lib.dosbox import get_dosbox_launcher, is_dosbox_installed
 from dosctl.lib.executables import executable_exists, get_or_prompt_command
-from dosctl.lib.dosbox import is_dosbox_installed, get_dosbox_launcher
+from dosctl.lib.game import install_game
 from dosctl.lib.network import (
     DEFAULT_IPX_PORT,
-    IPXServerConfig,
     IPXClientConfig,
+    IPXServerConfig,
     get_local_ip,
     get_public_ip,
     is_cgnat_address,
 )
-from dosctl.lib.discovery import encode_discovery_code, resolve_host
 from dosctl.lib.upnp import UPnPPortMapper
-from dosctl.lib.aliases import resolve_game_id
 
 
 def _check_dosbox():
@@ -147,7 +149,7 @@ def _setup_internet_hosting(port, game_id, public_ip=None, no_upnp=False):
                     else:
                         detail = ""
                         if mapper._last_error:
-                            detail = " ({})".format(mapper._last_error)
+                            detail = f" ({mapper._last_error})"
                         click.echo(
                             f"UPnP: Could not open port automatically{detail}. "
                             f"If you have already forwarded UDP port {port} to "

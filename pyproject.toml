@@ -36,6 +36,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "ruff",
 ]
 
 [project.scripts]
@@ -48,3 +49,14 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "dosctl.lib" = ["wordlist.txt"]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: isort, B: bugbear, UP: pyupgrade
+select = ["E", "F", "W", "I", "B", "UP"]
+# Long lines (help text, URLs, discovery word list) are not worth churning over.
+ignore = ["E501"]

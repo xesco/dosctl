@@ -1,9 +1,11 @@
-import click
 import shutil
-from dosctl.config import INSTALLED_DIR, DOWNLOADS_DIR
-from dosctl.lib.decorators import ensure_cache
-from dosctl.lib.aliases import resolve_game_id, remove_aliases_for_game_id
+
+import click
+
+from dosctl.config import DOWNLOADS_DIR, INSTALLED_DIR
+from dosctl.lib.aliases import remove_aliases_for_game_id, resolve_game_id
 from dosctl.lib.config_store import get_game_command, set_game_command
+from dosctl.lib.decorators import ensure_cache
 
 
 @click.command()
@@ -37,11 +39,11 @@ def delete(collection, game_id):
     try:
         if game_install_path.exists():
             shutil.rmtree(game_install_path)
-            click.echo(f"✅ Successfully deleted installation directory.")
+            click.echo("✅ Successfully deleted installation directory.")
 
         if downloaded_zip.exists():
             downloaded_zip.unlink()
-            click.echo(f"✅ Successfully deleted downloaded archive.")
+            click.echo("✅ Successfully deleted downloaded archive.")
 
         removed_aliases = remove_aliases_for_game_id(game_id)
         if removed_aliases:

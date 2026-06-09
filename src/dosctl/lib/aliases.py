@@ -6,7 +6,9 @@ to games by a memorable name instead of an 8-character hash ID.
 
 import json
 import re
-from typing import Dict
+from typing import Dict, List
+
+import click
 
 from dosctl.config import CONFIG_DIR
 
@@ -28,7 +30,7 @@ def _load() -> Dict:
     if not ALIASES_FILE.exists():
         return {}
     try:
-        with open(ALIASES_FILE, "r") as f:
+        with open(ALIASES_FILE) as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError):
         return {}
@@ -40,7 +42,7 @@ def _save(aliases: Dict) -> None:
         with open(ALIASES_FILE, "w") as f:
             json.dump(aliases, f, indent=2, sort_keys=True)
     except OSError as e:
-        print(f"Warning: Could not save aliases: {e}")
+        click.echo(f"Warning: Could not save aliases: {e}", err=True)
 
 
 def set_alias(alias: str, game_id: str, game_name: str) -> None:
@@ -60,7 +62,7 @@ def remove_alias(alias: str) -> None:
     _save(aliases)
 
 
-def remove_aliases_for_game_id(game_id: str) -> list[str]:
+def remove_aliases_for_game_id(game_id: str) -> List[str]:
     """Remove all aliases that point to the given game ID."""
     aliases = _load()
     removed = [alias for alias, entry in aliases.items() if entry["id"] == game_id]

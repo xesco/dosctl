@@ -1,13 +1,14 @@
 """Integration tests for dosctl functionality."""
-import pytest
-from unittest.mock import patch, Mock
-from pathlib import Path
 import tempfile
 import zipfile
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pytest
 
 from dosctl.collections.factory import create_collection
-from dosctl.lib.game import install_game
 from dosctl.lib import game as game_module
+from dosctl.lib.game import install_game
 
 
 class TestIntegration:

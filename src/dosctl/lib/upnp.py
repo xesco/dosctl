@@ -12,18 +12,15 @@ The protocol flow is:
   4. SOAP POST to add/delete port mappings
 """
 
+import atexit
+import re
 import socket
 import struct
-import re
-import atexit
-
-from typing import Optional
+from urllib.error import HTTPError
+from urllib.parse import urljoin
 
 # Python 2/3 compat is not needed (>=3.8) but keep imports clean
 from urllib.request import Request, urlopen
-from urllib.error import HTTPError
-from urllib.parse import urljoin, urlparse
-
 from xml.etree import ElementTree as ET
 
 # SSDP constants
@@ -101,7 +98,7 @@ class UPnPError(Exception):
     pass
 
 
-class UPnPPortMapper(object):
+class UPnPPortMapper:
     """UPnP IGD port mapper using only stdlib.
 
     Usage:
@@ -411,9 +408,7 @@ class UPnPPortMapper(object):
             UPnPError: With SOAP fault detail if the router returns an error.
         """
         envelope = _SOAP_ENVELOPE.format(body=body)
-        soap_action = '"{service_type}#{action}"'.format(
-            service_type=self._service_type, action=action
-        )
+        soap_action = f'"{self._service_type}#{action}"'
 
         control_url = str(self._control_url)
         req = Request(control_url, data=envelope.encode("utf-8"))
@@ -443,9 +438,7 @@ class UPnPPortMapper(object):
                             break
             except Exception:
                 pass
-            msg = "SOAP {action} failed (HTTP {code})".format(
-                action=action, code=exc.code
-            )
+            msg = f"SOAP {action} failed (HTTP {exc.code})"
             if detail:
                 msg += ": " + detail
             raise UPnPError(msg) from exc
