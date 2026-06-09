@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dosctl"
-version = "1.9.3"
+version = "1.9.4"
 description = "A command-line tool to manage and play DOS games via DOSBox."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -51,7 +51,7 @@ where = ["src"]
 "dosctl.lib" = ["wordlist.txt"]
 
 [tool.ruff]
-target-version = "py38"
+target-version = "1.9.4"
 line-length = 100
 src = ["src", "tests"]
 
