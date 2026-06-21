@@ -19,7 +19,7 @@ from .commands.version import version
 def cli(ctx, version):
     """A command-line tool to manage and play DOS games."""
     if version:
-        click.echo(f"DOSCtl {__version__}")
+        click.echo(f"dosctl {__version__}")
         return
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())

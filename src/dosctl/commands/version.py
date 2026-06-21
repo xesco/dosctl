@@ -5,5 +5,5 @@ from .. import __version__
 
 @click.command()
 def version():
-    """Show the version of DOSCtl."""
-    click.echo(f"DOSCtl {__version__}")
+    """Show the version of dosctl."""
+    click.echo(f"dosctl {__version__}")

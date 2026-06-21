@@ -15,11 +15,11 @@ class TestVersionCommand:
     def test_output_contains_dosctl_name(self):
         runner = CliRunner()
         result = runner.invoke(cli, ["--version"])
-        assert "DOSCtl" in result.output
+        assert "dosctl" in result.output
 
     def test_version_subcommand_is_registered(self):
         runner = CliRunner()
         result = runner.invoke(cli, ["version"])
         assert result.exit_code == 0
-        assert "DOSCtl" in result.output
+        assert "dosctl" in result.output
         assert dosctl.__version__ in result.output
