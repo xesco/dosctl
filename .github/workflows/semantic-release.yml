@@ -20,23 +20,20 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: |
-          pip install build
-          npm install -g semantic-release @semantic-release/exec @semantic-release/github @semantic-release/git
+      - name: Install release tooling
+        run: npm install -g semantic-release @semantic-release/exec @semantic-release/github @semantic-release/git
 
       - name: Run tests
         run: |
-          pip install -e ".[dev]"
-          python -m pytest
+          uv sync
+          uv run pytest
 
       - name: Configure Git
         run: |
