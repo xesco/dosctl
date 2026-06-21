@@ -21,6 +21,9 @@ pip install dosctl
 <summary>Other install methods</summary>
 
 ```bash
+# Isolated CLI install (recommended for tools)
+uv tool install dosctl       # or: pipx install dosctl
+
 # From GitHub
 pip install git+ssh://git@github.com/xesco/dosctl.git
 
