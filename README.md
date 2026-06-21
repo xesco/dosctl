@@ -21,13 +21,17 @@ pip install dosctl
 <summary>Other install methods</summary>
 
 ```bash
+# Isolated CLI install (recommended for tools)
+uv tool install dosctl       # or: pipx install dosctl
+
 # From GitHub
 pip install git+ssh://git@github.com/xesco/dosctl.git
 
-# Development (editable)
+# Development (uses uv: https://docs.astral.sh/uv/)
 git clone git@github.com:xesco/dosctl.git
 cd dosctl
-pip install -e ".[dev]"
+uv sync          # creates .venv and installs runtime + dev dependencies
+uv run dosctl    # run the CLI; or `uv run pytest` to run the tests
 ```
 </details>
 

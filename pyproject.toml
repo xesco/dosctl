@@ -33,7 +33,7 @@ dependencies = [
 "Source" = "https://github.com/xesco/dosctl"
 "Issues" = "https://github.com/xesco/dosctl/issues"
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest",
     "ruff",
@@ -51,7 +51,7 @@ where = ["src"]
 "dosctl.lib" = ["wordlist.txt"]
 
 [tool.ruff]
-target-version = "1.9.4"
+target-version = "py38"
 line-length = 100
 src = ["src", "tests"]
 
