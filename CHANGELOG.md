@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-08-09
 
 ### Features
-- Initial release of DOSCtl
+- Initial release of dosctl
 - Command-line interface for managing DOS games
 - Support for archive.org collections
 - Game search, installation, and execution capabilities

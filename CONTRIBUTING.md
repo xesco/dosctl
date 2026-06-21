@@ -1,4 +1,4 @@
-# Contributing to DOSCtl
+# Contributing to dosctl
 
 ## ⚠️ Important Disclaimer
 

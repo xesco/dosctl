@@ -1,8 +1,8 @@
-# DOSCtl
+# dosctl
 
 A command-line tool to manage and play DOS games via DOSBox.
 
-![DOSCtl Screenshot](dosctl-screenshot.png)
+![dosctl Screenshot](dosctl-screenshot.png)
 
 ## Installation
 
@@ -13,7 +13,7 @@ A command-line tool to manage and play DOS games via DOSBox.
 brew install dosbox          # macOS
 sudo apt install dosbox      # Ubuntu/Debian
 
-# Install DOSCtl
+# Install dosctl
 pip install dosctl
 ```
 
