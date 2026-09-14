@@ -85,7 +85,7 @@ Adding a collection on the Internet Archive whose page lists zip archives takes 
             return f"https://archive.org/download/{self.item_name}/TDC_Release_14.zip/{encoded_full_path}"
     ```
 
-    Override `_parse_filename` too when the file names carry the year in another form.
+    Override `_parse_filename` too when the name or the year is to be read from the file name in another way.
 
 2. Register the class under a new key in `COLLECTION_REGISTRY` in `factory.py`. `create_collection` raises `ValueError` for a key that is not there, and `get_available_collections` returns the keys.
 
