@@ -1,17 +1,22 @@
 import click
 
 from dosctl.collections.factory import create_collection
-from dosctl.config import COLLECTION_CACHE_DIR, DEFAULT_COLLECTION_SOURCE, ensure_dirs_exist
+from dosctl.config import (
+    COLLECTION_CACHE_DIR,
+    DEFAULT_COLLECTION_SOURCE,
+    DEFAULT_COLLECTION_TYPE,
+    ensure_dirs_exist,
+)
 
 
 @click.command()
-@click.option('--force', is_flag=True, default=False, help='Force a re-download of the game list.')
+@click.option('--force', is_flag=True, default=False, help='Rebuild the catalog without the reminder.')
 def refresh(force):
     """
-    Downloads the latest game list from the collection source.
+    Rebuilds the catalog from the collection source.
     """
     if not force:
-        click.echo("This command will re-download the entire game list.")
+        click.echo("This command will rebuild the entire catalog.")
         click.echo("Use 'dosctl refresh --force' to confirm.")
         return
 
@@ -19,10 +24,10 @@ def refresh(force):
     ensure_dirs_exist()
 
     collection = create_collection(
-        "tdc_release_14",
+        DEFAULT_COLLECTION_TYPE,
         source=DEFAULT_COLLECTION_SOURCE,
         cache_dir=COLLECTION_CACHE_DIR,
     )
 
-    click.echo("Forcing a refresh of the game lists...")
+    click.echo("Rebuilding the catalog...")
     collection.ensure_cache_is_present(force_refresh=True)

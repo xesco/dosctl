@@ -312,16 +312,22 @@ Starting 'TENTACLE.EXE' with DOSBox (IPX networking)...
 
 ### `dosctl refresh --force`
 
-Downloads the catalog again from the Internet Archive and replaces the local file. Without `--force`, `refresh` prints a reminder to add the flag and changes nothing.
+Builds the catalog again from its source. Without `--force`, `refresh` prints a reminder to add the flag and changes nothing.
 
 ```bash
 dosctl refresh --force
 ```
 ```
 Ensuring application directories exist...
-Forcing a refresh of the game lists...
+Rebuilding the catalog...
 Downloading game list from https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip...
 ✅ Game list refreshed successfully.
+```
+
+When the catalog comes from a directory (see [Where the games come from](#where-the-games-come-from)), the last two lines are replaced by a count of the archives found:
+
+```
+✅ Found 2 games in '/home/you/dos-games'.
 ```
 
 ### `dosctl version`
@@ -369,7 +375,27 @@ The data directory holds the catalog, the downloaded archives and the installed 
 
 ## Where the games come from
 
-The catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. You can add other collections (see [src/dosctl/collections/README.md](src/dosctl/collections/README.md)).
+The catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. Two environment variables replace that collection with a directory of your own; the table gives them.
+
+| Variable | Value |
+|----------|-------|
+| `DOSCTL_COLLECTION` | `local_file` |
+| `DOSCTL_COLLECTION_SOURCE` | The directory that holds the archives; `~` stands for your home directory |
+
+dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension, its year is the first four digits in parentheses in the file name, and its ID is the hash of the file's path relative to the directory. The directory is read again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`, `info` never reports such a game as downloaded, and `delete` never removes a file from the directory.
+
+```bash
+export DOSCTL_COLLECTION=local_file
+export DOSCTL_COLLECTION_SOURCE=~/dos-games
+dosctl list
+```
+```
+Available Games:
+  [b1500715] (1993) Doom (1993)(id Software)
+  [fe76b3eb] (1990) Prince of Persia (1990)
+```
+
+You can add collections of other kinds (see [src/dosctl/collections/README.md](src/dosctl/collections/README.md)).
 
 ## Development
 

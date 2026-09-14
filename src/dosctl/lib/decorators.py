@@ -1,7 +1,12 @@
 from functools import wraps
 
 from dosctl.collections.factory import create_collection
-from dosctl.config import COLLECTION_CACHE_DIR, DEFAULT_COLLECTION_SOURCE, ensure_dirs_exist
+from dosctl.config import (
+    COLLECTION_CACHE_DIR,
+    DEFAULT_COLLECTION_SOURCE,
+    DEFAULT_COLLECTION_TYPE,
+    ensure_dirs_exist,
+)
 
 
 def ensure_cache(f):
@@ -13,7 +18,7 @@ def ensure_cache(f):
     def decorated_function(*args, **kwargs):
         ensure_dirs_exist()
         collection = create_collection(
-            "tdc_release_14",
+            DEFAULT_COLLECTION_TYPE,
             source=DEFAULT_COLLECTION_SOURCE,
             cache_dir=COLLECTION_CACHE_DIR,
         )

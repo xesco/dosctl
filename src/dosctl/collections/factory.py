@@ -1,9 +1,11 @@
 """Collection factory for creating appropriate collection instances."""
 from .archive_org import TotalDOSCollectionRelease14
+from .local_file import LocalFileCollection
 
 # Registry of available collection implementations
 COLLECTION_REGISTRY = {
     "tdc_release_14": TotalDOSCollectionRelease14,
+    "local_file": LocalFileCollection,
 }
 
 def create_collection(collection_type: str, source: str, cache_dir: str):
@@ -12,7 +14,7 @@ def create_collection(collection_type: str, source: str, cache_dir: str):
 
     Args:
         collection_type: The type of collection (e.g., "tdc_release_14")
-        source: The source URL for the collection
+        source: The source of the collection: a URL, or a directory for "local_file"
         cache_dir: Directory for caching collection data
 
     Returns:

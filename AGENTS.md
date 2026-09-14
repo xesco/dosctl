@@ -50,10 +50,12 @@ uv run ruff check --fix .
 Most commands are wrapped with `@ensure_cache`, which automatically creates directories, initializes the game collection, and loads/downloads the game cache before passing the collection to the command handler. This is the central orchestration mechanism.
 
 ### Collection Backend (`src/dosctl/collections/`)
-- `base.py` — `BaseCollection` ABC defining the collection interface
+- `base.py` — `BaseCollection` ABC defining the collection interface; `CatalogCollection` with the shared in-memory list, ID lookup and safe unzip
 - `archive_org.py` — `ArchiveOrgCollection` base + `TotalDOSCollectionRelease14` concrete class
-- `factory.py` — creates collection instances
-- Game IDs are 8-character SHA1 hash prefixes derived from the game filename
+- `local_file.py` — `LocalFileCollection`: zip archives in a local directory, rescanned every run, unpacked in place
+- `factory.py` — creates collection instances; keys `tdc_release_14` and `local_file`
+- The collection is chosen by `DOSCTL_COLLECTION` and `DOSCTL_COLLECTION_SOURCE` (see `config.py`)
+- Game IDs are 8-character SHA1 hash prefixes derived from the archive path
 
 ### Platform Abstraction (`src/dosctl/lib/platform.py`)
 - `PlatformBase` ABC for OS-specific paths and DOSBox detection
@@ -93,7 +95,7 @@ Most commands are wrapped with `@ensure_cache`, which automatically creates dire
 - Status: "Not downloaded", "Downloaded", or "Installed"; shows archive/install path and saved default command
 
 ### Other Key Modules
-- `config.py` — platform-aware directory paths (config, data, collections, downloads, installed); also defines `IPX_CONF_PATH` and `DEFAULT_COLLECTION_SOURCE`
+- `config.py` — platform-aware directory paths (config, data, collections, downloads, installed); also defines `IPX_CONF_PATH`, `DEFAULT_COLLECTION_TYPE` and `DEFAULT_COLLECTION_SOURCE`
 - `lib/game.py` — game download, extraction, and installation
 - `lib/aliases.py` — alias storage in `aliases.json`; `set_alias()`, `remove_alias()`, `remove_aliases_for_game_id()`, `list_aliases()`, `resolve_game_id()` (resolves alias or passes through raw game ID)
 - `lib/config_store.py` — persists chosen executable/command per game in `play_config.json` (migrated from old `run_config.json`)
