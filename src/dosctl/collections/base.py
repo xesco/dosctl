@@ -1,5 +1,12 @@
+import re
+import shutil
+import tempfile
+import zipfile
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import click
 
 
 class BaseCollection(ABC):
@@ -20,3 +27,132 @@ class BaseCollection(ABC):
     @abstractmethod
     def download_game(self, game_name: str, destination: str) -> None:
         pass
+
+
+class CatalogCollection(BaseCollection):
+    """
+    A collection of zip archives held in an in-memory list.
+    Subclasses build the list and fetch archives; lookup and unpacking live here.
+    """
+
+    def __init__(self, source: str, cache_dir: str, collection_name: str):
+        super().__init__(source)
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.collection_name = collection_name
+        self._games_data: List[Dict] = []
+        self._games_index: Dict[str, Dict] = {}
+
+    @abstractmethod
+    def ensure_cache_is_present(self, force_refresh: bool = False) -> None:
+        """Makes the list of games available."""
+
+    @abstractmethod
+    def _populate_games_data(self) -> None:
+        """Fills _games_data."""
+
+    def load(self, force_refresh: bool = False) -> None:
+        self.ensure_cache_is_present(force_refresh=force_refresh)
+        self._populate_games_data()
+
+    def _parse_filename(self, filename: str) -> Dict:
+        """
+        Parses a filename to extract the year and a clean name.
+        Can be overridden by subclasses for different parsing logic.
+        """
+        name_part = re.sub(r'\.zip$', '', filename, flags=re.IGNORECASE)
+        year = None
+
+        # Try to find a year like (1995) in the name
+        match = re.search(r'\(([0-9]{4})\)', name_part)
+        if match:
+            year = match.group(1)
+
+        return {"name": name_part, "year": year}
+
+    def get_games(self) -> List[Dict]:
+        if not self._games_data:
+            self._populate_games_data()
+        return self._games_data
+
+    def _ensure_index(self) -> None:
+        """(Re)build the id->game index when it is out of sync with _games_data."""
+        if len(self._games_index) != len(self._games_data):
+            self._games_index = {game["id"]: game for game in self._games_data}
+
+    def find_game(self, game_id: str) -> Optional[Dict]:
+        if not self._games_data:
+            self._populate_games_data()
+        self._ensure_index()
+        return self._games_index.get(game_id)
+
+    def unzip_game(self, game_id: str, download_path: Path, install_path: Path) -> None:
+        """
+        Unzips a downloaded game to a specified installation directory.
+        """
+        game = self.find_game(game_id)
+        if not game:
+            raise FileNotFoundError(f"Game with ID '{game_id}' not found.")
+
+        zip_filename = game["name"] + ".zip"
+        zip_filepath = download_path / zip_filename
+
+        if not zip_filepath.exists():
+            raise FileNotFoundError(f"Downloaded game zip not found at '{zip_filepath}'")
+
+        self._unpack_archive(zip_filepath, install_path)
+
+    def _unpack_archive(self, zip_filepath: Path, install_path: Path) -> None:
+        click.echo(f"Unzipping '{zip_filepath.name}' to '{install_path}'...")
+        with zipfile.ZipFile(zip_filepath, 'r') as zip_ref:
+            self._extract_zip_safely(zip_ref, install_path)
+        click.echo("Unzip complete.")
+
+    def _extract_zip_safely(self, zip_ref: zipfile.ZipFile, install_path: Path) -> None:
+        """Extract a ZIP into the install path without allowing path escapes.
+
+        Files are extracted into a sibling temporary directory first and only
+        moved into place after the whole archive has been validated and
+        extracted successfully.
+        """
+        install_parent = install_path.parent
+        install_parent.mkdir(parents=True, exist_ok=True)
+
+        temp_install_path = Path(
+            tempfile.mkdtemp(prefix=f"{install_path.name}.tmp-", dir=str(install_parent))
+        )
+
+        try:
+            for member in zip_ref.infolist():
+                target_path = self._validated_extract_path(
+                    member.filename, install_root=temp_install_path
+                )
+
+                if member.is_dir():
+                    target_path.mkdir(parents=True, exist_ok=True)
+                    continue
+
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                with zip_ref.open(member, "r") as source, open(target_path, "wb") as dest:
+                    shutil.copyfileobj(source, dest)
+
+            temp_install_path.rename(install_path)
+        except Exception:
+            shutil.rmtree(temp_install_path, ignore_errors=True)
+            raise
+
+    def _validated_extract_path(self, member_name: str, install_root: Path) -> Path:
+        """Return the validated extraction target for a ZIP member."""
+        normalized_name = member_name.replace("\\", "/")
+
+        if not normalized_name or normalized_name.startswith("/"):
+            raise ValueError(f"Archive contains an unsafe path: '{member_name}'")
+
+        if re.match(r"^[A-Za-z]:", normalized_name):
+            raise ValueError(f"Archive contains an unsafe path: '{member_name}'")
+
+        member_path = Path(normalized_name)
+        if any(part in ("", ".", "..") for part in member_path.parts):
+            raise ValueError(f"Archive contains an unsafe path: '{member_name}'")
+
+        return install_root.joinpath(*member_path.parts)
