@@ -25,3 +25,6 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Sample game archives for testing a local collection
+src/dosgames/

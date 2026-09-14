@@ -53,7 +53,7 @@ BaseCollection
 
 `_parse_filename(filename)` takes an archive's file name and returns a dict with `name` (the file name without its `.zip` extension, in any case) and `year` (the first four digits in parentheses, or `None`). A subclass overrides it when it needs to parse the file name differently.
 
-`unzip_game` refuses an archive whose member paths are absolute, start with a drive letter or contain `..`, so an archive cannot write outside the install directory. It unpacks into a temporary directory next to `install_path` and renames that directory into place when every member has been written, so a failed unpack leaves no half-filled install directory. The check and the temporary directory are in `_unpack_archive(zip_filepath, install_path)`, which a subclass calls to unpack an archive from another place.
+`unzip_game` refuses an archive whose member paths are absolute, start with a drive letter or contain `..`, so an archive cannot write outside the install directory. It unpacks into a temporary directory next to `install_path` and renames that directory into place when every member has been written, so a failed unpack leaves no half-filled install directory. When a member uses a compression method that Python's `zipfile` cannot read (PKZIP Implode, common in archives from the early 1990s), it runs the `unzip` command on the archive instead, after the same path check, and raises `RuntimeError` when `unzip` is not installed. The check, the temporary directory and the fallback are in `_unpack_archive(zip_filepath, install_path)`, which a subclass calls to unpack an archive from another place.
 
 ### ArchiveOrgCollection
 

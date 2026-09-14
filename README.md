@@ -6,7 +6,7 @@ dosctl is a command-line tool that plays DOS games in DOSBox. Its catalog (the l
 
 ## Installation
 
-dosctl needs Python 3.8 or newer and DOSBox. dosctl runs the first DOSBox program it finds in the order of the table below. Linux and macOS are the primary platforms, and Windows support is experimental.
+dosctl needs Python 3.8 or newer and DOSBox. dosctl runs the first DOSBox program it finds in the order of the table below. Linux and macOS are the primary platforms, and Windows support is experimental. Some archives from the early 1990s use a compression method (PKZIP Implode) that Python cannot read; dosctl unpacks those with the `unzip` command, which macOS ships and Linux package managers provide as `unzip`.
 
 | Platform | DOSBox programs dosctl looks for, in order |
 |----------|-------------------------------------------|
