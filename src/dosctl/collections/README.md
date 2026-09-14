@@ -4,11 +4,11 @@ A collection is a web page that lists one zip archive per game. dosctl downloads
 
 ## How dosctl uses a collection
 
-Every command that needs the catalog is wrapped in `ensure_cache` (`src/dosctl/lib/decorators.py`). The wrapper creates the collection with `create_collection` (`factory.py`), calls `ensure_cache_is_present` on it and passes it to the command. The type it asks for is `tdc_release_14`, and the source URL and the cache directory come from `DEFAULT_COLLECTION_SOURCE` and `COLLECTION_CACHE_DIR` in `src/dosctl/config.py`. No flag selects a collection.
+`ensure_cache` (`src/dosctl/lib/decorators.py`) wraps every command that needs the catalog. The wrapper creates the collection with `create_collection` (`factory.py`), calls `ensure_cache_is_present` on it and passes it to the command. The type it asks for is `tdc_release_14`, and the source URL and the cache directory come from `DEFAULT_COLLECTION_SOURCE` and `COLLECTION_CACHE_DIR` in `src/dosctl/config.py`. No flag selects a collection.
 
 A collection does four things in turn.
 
-1. It downloads the source page and writes a line per zip archive to the catalog file `games.txt` in the cache directory.
+1. It downloads the source page and writes a line per zip archive to the catalog file `games.txt` in the cache directory (see [The catalog file](#the-catalog-file)).
 2. It reads that file into memory when a command asks for games.
 3. It downloads a game's archive into the downloads directory.
 4. It unpacks the archive into the game's install directory.
@@ -53,7 +53,7 @@ Three methods are meant to be overridden. `_build_download_url(encoded_full_path
 
 ### TotalDOSCollectionRelease14
 
-`TotalDOSCollectionRelease14` (`archive_org.py`) is the one collection dosctl ships. It passes the name `Total DOS Collection Release 14` to the constructor and defines `_build_download_url` as `https://archive.org/download/<item name>/TDC_Release_14.zip/<encoded path>`.
+`TotalDOSCollectionRelease14` (`archive_org.py`) is the one collection dosctl ships. It passes the name `Total DOS Collection Release 14` to the constructor and defines `_build_download_url` as `https://archive.org/download/<item name>/TDC_Release_14.zip/<encoded path>` (the code is in step 1 of [Adding a collection](#adding-a-collection)).
 
 ## The catalog file
 
@@ -62,8 +62,8 @@ Three methods are meant to be overridden. `_build_download_url(encoded_full_path
 | Field | Comes from |
 |-------|------------|
 | ID | The first 8 characters of the SHA-1 hash of the decoded archive path |
-| Name | `_parse_filename`: the file name without `.zip` |
-| Year | `_parse_filename`: the first four digits in parentheses, or empty when the file name has none |
+| Name | The `name` that `_parse_filename` returns |
+| Year | The `year` that `_parse_filename` returns, written empty when it is `None` |
 | Archive path | The last part of the `href`, URL-decoded |
 
 ```
@@ -72,7 +72,7 @@ Three methods are meant to be overridden. `_build_download_url(encoded_full_path
 
 ## Adding a collection
 
-Adding a collection on the Internet Archive whose page lists zip archives takes four steps.
+Adding a collection from an Internet Archive page that lists zip archives takes four steps.
 
 1. Add a subclass of `ArchiveOrgCollection` to `archive_org.py` that passes the collection's name to the constructor and defines `_build_download_url`. `TotalDOSCollectionRelease14` is the model:
 
@@ -85,11 +85,11 @@ Adding a collection on the Internet Archive whose page lists zip archives takes 
             return f"https://archive.org/download/{self.item_name}/TDC_Release_14.zip/{encoded_full_path}"
     ```
 
-    Override `_parse_filename` too when the file names carry the year in another form.
+    Override `_parse_filename` too (described under [ArchiveOrgCollection](#archiveorgcollection)) when you need to parse the file name differently.
 
 2. Register the class under a new key in `COLLECTION_REGISTRY` in `factory.py`. `create_collection` raises `ValueError` for a key that is not there, and `get_available_collections` returns the keys.
 
-3. Make dosctl use the new key by changing the type passed to `create_collection` in `ensure_cache` (`src/dosctl/lib/decorators.py`), and set `DEFAULT_COLLECTION_SOURCE` in `src/dosctl/config.py` to the new page.
+3. Make dosctl use the new key by changing the type passed to `create_collection` in `ensure_cache` (`src/dosctl/lib/decorators.py`) and setting `DEFAULT_COLLECTION_SOURCE` in `src/dosctl/config.py` to the new page.
 
 4. Run the tests of this package with `uv run pytest tests/test_collections.py`.
 
