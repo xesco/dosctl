@@ -4,7 +4,7 @@ A collection is a list of zip archives, one per game, that dosctl reads games fr
 
 ## How dosctl uses a collection
 
-Every command that needs the list of games is wrapped in `ensure_cache` (`src/dosctl/lib/decorators.py`). The wrapper creates the collection with `create_collection` (`factory.py`), calls `ensure_cache_is_present` on it and passes it to the command. The type key, the source and the cache directory come from `DEFAULT_COLLECTION_TYPE`, `DEFAULT_COLLECTION_SOURCE` and `COLLECTION_CACHE_DIR` in `src/dosctl/config.py`. The table gives the two environment variables that set the type key and the source, and their defaults.
+`ensure_cache` (`src/dosctl/lib/decorators.py`) wraps every command that needs the list of games. The wrapper creates the collection with `create_collection` (`factory.py`), calls `ensure_cache_is_present` on it and passes it to the command. The type key, the source and the cache directory come from `DEFAULT_COLLECTION_TYPE`, `DEFAULT_COLLECTION_SOURCE` and `COLLECTION_CACHE_DIR` in `src/dosctl/config.py`. The table gives the two environment variables that set the type key and the source, and their defaults.
 
 | Variable | Sets | Default |
 |----------|------|---------|
@@ -51,7 +51,7 @@ BaseCollection
 | `find_game(game_id)` | Returns the game with that ID, or `None` |
 | `unzip_game(game_id, download_path, install_path)` | Unpacks `<download_path>/<name>.zip` into `install_path`; raises `FileNotFoundError` when the ID is unknown or the file is missing |
 
-`_parse_filename(filename)` takes an archive's file name and returns a dict with `name` (the file name without its `.zip` extension, in any case) and `year` (the first four digits in parentheses, or `None`). A subclass overrides it when the name or the year is to be read from the file name in another way.
+`_parse_filename(filename)` takes an archive's file name and returns a dict with `name` (the file name without its `.zip` extension, in any case) and `year` (the first four digits in parentheses, or `None`). A subclass overrides it when it needs to parse the file name differently.
 
 `unzip_game` refuses an archive whose member paths are absolute, start with a drive letter or contain `..`, so an archive cannot write outside the install directory. It unpacks into a temporary directory next to `install_path` and renames that directory into place when every member has been written, so a failed unpack leaves no half-filled install directory. The check and the temporary directory are in `_unpack_archive(zip_filepath, install_path)`, which a subclass calls to unpack an archive from another place.
 
@@ -89,8 +89,8 @@ A scan takes every file in the directory and its subdirectories whose extension 
 | Field | Comes from |
 |-------|------------|
 | `id` | The first 8 characters of the SHA-1 hash of the archive's path relative to the directory, with `/` between parts |
-| `name` | `_parse_filename`: the file name without its `.zip` extension |
-| `year` | `_parse_filename`: the first four digits in parentheses, or `None` |
+| `name` | The `name` that `_parse_filename` returns |
+| `year` | The `year` that `_parse_filename` returns |
 | `full_path` | The archive's path relative to the directory, with `/` between parts |
 
 Because the archive is never copied into the downloads directory, `dosctl info` never reports a game of this collection as downloaded, and `dosctl delete` never removes a file from the directory.
@@ -102,8 +102,8 @@ Because the archive is never copied into the downloads directory, `dosctl info` 
 | Field | Comes from |
 |-------|------------|
 | ID | The first 8 characters of the SHA-1 hash of the decoded archive path |
-| Name | `_parse_filename`: the file name without its `.zip` extension |
-| Year | `_parse_filename`: the first four digits in parentheses, or empty when the file name has none |
+| Name | The `name` that `_parse_filename` returns |
+| Year | The `year` that `_parse_filename` returns, written empty when it is `None` |
 | Archive path | The last part of the `href`, URL-decoded |
 
 ```
@@ -112,7 +112,7 @@ Because the archive is never copied into the downloads directory, `dosctl info` 
 
 ## Adding a collection on the Internet Archive
 
-Adding a collection on the Internet Archive whose page lists zip archives takes four steps.
+Adding a collection from an Internet Archive page that lists zip archives takes four steps.
 
 1. Add a subclass of `ArchiveOrgCollection` to `archive_org.py` that passes the collection's name to the constructor and defines `_build_download_url`. `TotalDOSCollectionRelease14` is the model:
 
@@ -125,7 +125,7 @@ Adding a collection on the Internet Archive whose page lists zip archives takes 
             return f"https://archive.org/download/{self.item_name}/TDC_Release_14.zip/{encoded_full_path}"
     ```
 
-    Override `_parse_filename` too (described under [CatalogCollection](#catalogcollection)) when the name or the year is to be read from the file name in another way.
+    Override `_parse_filename` too (described under [CatalogCollection](#catalogcollection)) when you need to parse the file name differently.
 
 2. Register the class under a new key in `COLLECTION_REGISTRY` in `factory.py`. `create_collection` raises `ValueError` for a key that is not there, and `get_available_collections` returns the keys.
 
