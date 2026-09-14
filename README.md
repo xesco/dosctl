@@ -1,6 +1,6 @@
 # dosctl
 
-dosctl is a command-line tool that plays DOS games in DOSBox. Its catalog (the list of games it can play) comes from the Total DOS Collection Release 14 on the Internet Archive and holds over 20,000 entries. dosctl downloads a game the first time you play it and starts it in DOSBox with the game's directory as drive C:. This page is for a person who wants to play those games from a terminal on Linux, macOS or Windows. It shows how to install dosctl and play a first game, then describes every command with its flags and output and every file dosctl writes.
+dosctl is a command-line tool that plays DOS games in DOSBox. Its catalog (the list of games it can play) comes from the Total DOS Collection Release 14 on the Internet Archive and holds over 20,000 entries. When you play a game for the first time, dosctl downloads and starts it in DOSBox with the game's directory as drive C:. This page is for a person who wants to play those games from a terminal on Linux, macOS or Windows. It shows how to install dosctl and play your first game, then describes every command with its flags and output and every file dosctl writes.
 
 ![dosctl Screenshot](dosctl-screenshot.png)
 
@@ -21,7 +21,7 @@ sudo apt install dosbox      # Ubuntu/Debian
 pip install dosctl
 ```
 
-uv or pipx installs dosctl in an environment of its own, and pip can install the current source from GitHub instead of the released package:
+uv or pipx installs dosctl in an environment of its own. pip can also install dosctl directly from the GitHub repository instead of the released package:
 
 ```bash
 uv tool install dosctl       # or: pipx install dosctl
@@ -30,7 +30,7 @@ pip install git+ssh://git@github.com/xesco/dosctl.git
 
 ## Getting started
 
-Every game in the catalog has an ID of 8 characters, taken from the start of a hash of the game's file name in the archive. `list` and `search` print the ID in square brackets before the year and the name, and the other commands take the ID as their first argument.
+Every game in the catalog has an ID of 8 characters. `list` and `search` print the ID in square brackets before the year and the name, and the other commands take the ID as their first argument.
 
 1. List the games. The first command that needs the catalog downloads it and saves it in a local file, so later commands read the file:
 
@@ -57,7 +57,7 @@ Every game in the catalog has an ID of 8 characters, taken from the start of a h
       ...
     ```
 
-3. Play a game by its ID. `play` downloads the game's zip archive, unpacks it into an install directory (the game is then *installed*) and starts DOSBox. When the install directory holds one executable (a file whose name ends in `.exe`, `.com` or `.bat`), dosctl runs that file. When it holds several, dosctl lists them and asks you to choose one. dosctl saves the choice as the game's default command, so the next `dosctl play` of that game runs the command without asking. The download progress comes first; then:
+3. Play a game by its ID. `play` downloads the game's zip archive, unpacks it into an install directory (the game is then *installed*) and starts DOSBox. When the install directory holds one executable (a file whose name ends in `.exe`, `.com` or `.bat`), dosctl runs that file. When the directory holds several, dosctl lists them and asks you to choose one. dosctl saves the choice as the game's default command, so the next `dosctl play` of that game runs the command without asking.
 
     ```bash
     dosctl play 2c802b5e
@@ -73,11 +73,11 @@ Every game in the catalog has an ID of 8 characters, taken from the start of a h
 
 ## Commands
 
-This section describes every command: what it does, its flags and what it prints. Where a command takes `GAME_ID|ALIAS`, you can pass an alias (a name you gave the game with `dosctl alias set`, see [dosctl alias](#dosctl-alias)) instead of the ID. `dosctl --help` lists the commands, and `dosctl <command> --help` shows a command's flags.
+This section describes what every command does, its flags and what it prints. Where a command takes `GAME_ID|ALIAS`, you can pass an alias (a name you gave the game with `dosctl alias set`, see [dosctl alias](#dosctl-alias)) instead of the ID. `dosctl --help` lists the commands, and `dosctl <command> --help` shows a command's flags.
 
 ### `dosctl list`
 
-Prints every game in the catalog, one per line: the ID in square brackets, the year in parentheses, then the name. The games are sorted by name unless you sort by year. A game is *installed* when its install directory exists.
+Prints every game in the catalog, one per line: the ID in square brackets, the year in parentheses, then the name. `list` sorts the games by name unless you pass `--sort-by year`. A game is *installed* when its install directory exists.
 
 | Flag | What it does |
 |------|--------------|
@@ -96,7 +96,7 @@ Available Games:
 
 ### `dosctl search [QUERY]`
 
-Prints the games whose name matches QUERY, in the same format as `list`. QUERY is a regular expression, matched anywhere in the name and ignoring case unless you ask for a case-sensitive search, so `Dune` also matches `Prairie Dunes`. You can omit QUERY when you filter by year; without QUERY and without a year, `search` prints an error.
+Prints the games whose name matches QUERY, in the same format as `list`. QUERY is a regular expression matched anywhere in the name, so `Dune` also matches `Prairie Dunes`. The match ignores case unless you pass `--case-sensitive`. You can omit QUERY when you filter by year. Without QUERY and without a year, `search` prints an error.
 
 | Flag | What it does |
 |------|--------------|
@@ -115,7 +115,7 @@ Found 19 game(s):
 
 ### `dosctl play GAME_ID|ALIAS [COMMAND_PARTS]...`
 
-Downloads and installs the game when it is not installed, starts DOSBox with the install directory as drive C:, runs one command inside DOSBox and closes DOSBox when that command ends. COMMAND_PARTS are the words after the ID, joined by spaces into the command; they are optional. dosctl chooses the command by the first rule below that applies.
+Downloads and installs the game when it is not installed, starts DOSBox with the install directory as drive C:, runs one command inside DOSBox and closes DOSBox when that command ends. COMMAND_PARTS are the words after the ID, joined by spaces into the command, and they are optional. dosctl chooses the command by the first rule below that applies.
 
 | When | Command that runs |
 |------|-------------------|
@@ -125,7 +125,7 @@ Downloads and installs the game when it is not installed, starts DOSBox with the
 | The install directory holds one executable | That executable |
 | The install directory holds several executables | The executable you choose from the menu |
 
-dosctl saves the command that runs as the game's default, so a command given as COMMAND_PARTS becomes the default for later runs. Before DOSBox starts, dosctl checks that the first word of the command names a file in the install directory; when it does not, dosctl prints an error, removes the saved default and stops. Every `/` in the command becomes `\` before DOSBox runs it, and when the first word is a path with a directory, DOSBox changes into that directory before running the file.
+dosctl saves the command that runs as the game's default, so a command given as COMMAND_PARTS becomes the default for later runs. Before DOSBox starts, dosctl checks that the first word of the command names a file in the install directory. When it does not, dosctl prints an error, removes the saved default and stops. Every `/` in the command becomes `\` before DOSBox runs it. When the first word is a path with a directory, DOSBox changes into that directory before running the file.
 
 | Flag | What it does |
 |------|--------------|
@@ -147,7 +147,7 @@ dosctl play d44bf6dc INSTALL.EXE -a        # Run the installer with A: mounted
 dosctl inspect -e d44bf6dc                 # Find the executable the installer created
 ```
 
-To look around a game's files inside DOSBox, open it without running anything:
+To browse a game's files inside DOSBox, open DOSBox without running anything:
 
 ```bash
 dosctl play 2c802b5e --no-exec             # Open DOSBox at the C:\> prompt
@@ -158,7 +158,7 @@ When a file named `dosbox.conf` exists in the install directory, `play`, `net ho
 
 ### `dosctl inspect GAME_ID|ALIAS`
 
-Prints the install directory of an installed game, then every file in it, one per line, as a path relative to the install directory, sorted, at every depth. With `-e, --executables`, `inspect` prints only the executables. When the game is not installed, `inspect` prints an error.
+Prints the install directory of an installed game, then every file in it at any depth, one per line and sorted. Each file is printed as a path relative to the install directory. With `-e, --executables`, `inspect` prints only the executables. When the game is not installed, `inspect` prints an error.
 
 ```bash
 dosctl inspect -e 2c802b5e
@@ -174,7 +174,7 @@ Executable files:
 
 ### `dosctl info GAME_ID|ALIAS`
 
-Prints the game's catalog entry and its state on your machine, one field per line. The Year line shows `----` when the catalog has no year for the game. The Alias, Archive, Path and Command lines appear only when they apply, as the table says.
+Prints the game's catalog entry and its state on your machine, one field per line. The Year line shows `----` when the catalog has no year for the game. The Alias, Archive, Path and Command lines appear only in some cases. The table gives each line and when `info` prints it.
 
 | Line | Shown when |
 |------|------------|
@@ -200,7 +200,7 @@ Command: TENTACLE.EXE
 
 ### `dosctl delete GAME_ID|ALIAS`
 
-Removes an installed game from your machine after you confirm. `delete` prints the paths it will remove, asks `Are you sure you want to continue? [y/N]`, then removes the install directory, the downloaded archive, every alias that points to the game and the game's saved default command. When the game is not installed, `delete` prints an error.
+Removes an installed game from your machine after you confirm. `delete` prints the paths it will remove, asks `Are you sure you want to continue? [y/N]`, then removes the install directory, the downloaded archive, every alias that points to the game and the game's saved default command. When you answer `n` (the default), `delete` prints `Deletion cancelled.` and removes nothing. When the game is not installed, `delete` prints an error.
 
 ```bash
 dosctl delete 6d7c46fb
@@ -238,9 +238,13 @@ Defined aliases:
 
 ### `dosctl net host GAME_ID|ALIAS [COMMAND_PARTS]...`
 
-Hosts a multiplayer game. DOSBox emulates IPX, the network protocol that DOS games with a network option use, and carries it over UDP: one player's DOSBox runs an IPX server and each other player's DOSBox connects to it. `net host` installs the game and chooses the command as `play` does, starts DOSBox with an IPX server on a UDP port, and runs the command. DOSBox stays open after the game exits, so you can start the game again without connecting again. Choose IPX in the game's own multiplayer menu once it runs.
+Hosts a multiplayer game. IPX is the network protocol that DOS games with a network option use. DOSBox emulates IPX and carries it over UDP, so one player's DOSBox runs an IPX server and each other player's DOSBox connects to that server. `net host` installs the game and chooses the command as `play` does, starts DOSBox with an IPX server on a UDP port, and runs the command. DOSBox stays open after the game exits, so you can start the game again without connecting again. Choose IPX in the game's own multiplayer menu once it runs.
 
-By default, `net host` serves your local network: it prints your local IP address and the `net join` command the other players run. With `--internet`, it prepares play over the internet in three steps: it asks your router by UPnP (a router feature that lets a program on your network ask for a port to be forwarded to it) to forward the UDP port to your machine, it finds your public IP address (from the router when UPnP succeeded, otherwise from `api.ipify.org` or `checkip.amazonaws.com`), and it prints a discovery code. A discovery code encodes the public IP address and the port in the form `WORD-NNNNN`; when the port is not 19900, a `-Pxxxx` suffix carries it. When UPnP fails, `net host` prints a message and goes on; when the router's address is a carrier-grade NAT address (common with Starlink), it says so, because port forwarding cannot work there and another player has to host.
+By default `net host` serves your local network, so it prints your local IP address and the `net join` command the other players run. With `--internet`, it prepares play over the internet in three steps.
+
+1. It asks your router by UPnP (a router feature that lets a program on your network ask for a port to be forwarded to it) to forward the UDP port to your machine. When UPnP fails, `net host` prints a message and continues. When the router's address is a carrier-grade NAT address (common with Starlink), `net host` says so, because port forwarding cannot work there and another player has to host.
+2. It finds your public IP address, from the router when UPnP succeeded and otherwise from `api.ipify.org` or `checkip.amazonaws.com`. When neither answers, `net host` says so and hosts without a discovery code.
+3. It prints a discovery code. The code encodes the public IP address and the port in the form `WORD-NNNNN`. When the port is not 19900, a `-Pxxxx` suffix carries the port.
 
 | Flag | What it does |
 |------|--------------|
@@ -288,7 +292,7 @@ Starting 'TENTACLE.EXE' with DOSBox (IPX networking)...
 
 ### `dosctl net join GAME_ID|ALIAS HOST_IP [COMMAND_PARTS]...`
 
-Joins a game that another player hosts with `net host`. HOST_IP is the host's IPv4 address on your local network, or the discovery code the host printed. `net join` installs the game and chooses the command as `play` does, starts DOSBox connected to the host's IPX server, and runs the command. As with `net host`, DOSBox stays open after the game exits. The port comes from the discovery code when the code carries one other than 19900; otherwise the port comes from `--port`.
+Joins a game that another player hosts with `net host`. HOST_IP is the host's IPv4 address on your local network, or the discovery code the host printed. `net join` installs the game and chooses the command as `play` does, starts DOSBox connected to the host's IPX server, and runs the command. As with `net host`, DOSBox stays open after the game exits. The port comes from the discovery code when the code carries a port other than 19900. Otherwise the port comes from `--port`.
 
 | Flag | What it does |
 |------|--------------|
@@ -333,7 +337,7 @@ dosctl 1.9.4
 
 ## Files
 
-dosctl keeps settings in a config directory and games in a data directory. The table gives both directories for each platform; on macOS and Windows the two are the same directory.
+dosctl keeps settings in a config directory and games in a data directory. The table gives both directories for each platform. On macOS and Windows the two are the same directory.
 
 | Platform | Config directory | Data directory |
 |----------|------------------|----------------|
@@ -365,22 +369,22 @@ The data directory holds the catalog, the downloaded archives and the installed 
 
 ## Where the games come from
 
-The catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. dosctl downloads the catalog the first time a command needs it and a game's archive the first time you play the game. Other collections can be added; see [src/dosctl/collections/README.md](src/dosctl/collections/README.md).
+The catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. You can add other collections (see [src/dosctl/collections/README.md](src/dosctl/collections/README.md)).
 
 ## Development
 
-The project uses [uv](https://docs.astral.sh/uv/). `uv sync` creates `.venv` and installs the runtime and development dependencies, `uv run dosctl` runs the CLI from the source, and `uv run pytest` runs the tests:
+The project uses [uv](https://docs.astral.sh/uv/). Clone the repository, then run these commands in order:
 
 ```bash
 git clone git@github.com:xesco/dosctl.git
 cd dosctl
-uv sync
-uv run dosctl
-uv run pytest
+uv sync           # Create .venv and install the runtime and development dependencies
+uv run dosctl     # Run the CLI from the source
+uv run pytest     # Run the tests
 ```
 
-Commit messages follow Conventional Commits, and a push to `main` releases automatically; see [CONTRIBUTING.md](CONTRIBUTING.md).
+Commit messages follow Conventional Commits, and a push to `main` releases automatically (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## Disclaimer
 
-dosctl does not host or distribute any games; it manages content from an external source, and you are responsible for having the legal rights to any content you use. dosctl is released under the MIT license; see [LICENSE](LICENSE).
+dosctl does not host or distribute any games. It manages content from an external source, and you are responsible for having the legal rights to any content you use. dosctl is released under the MIT license (see [LICENSE](LICENSE)).
