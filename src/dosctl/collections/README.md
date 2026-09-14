@@ -1,145 +1,105 @@
-# Collections Architecture
+# Collections
 
-This directory contains the collection backend system for dosctl, which manages different sources of DOS games. The architecture uses a flexible class hierarchy that allows for easy extension to support new game collections.
+A collection is a web page that lists one zip archive per game. dosctl downloads games from that page. This package holds the code that reads such a list, keeps it in a local catalog file, and downloads and unpacks an archive when a game is played. This page is for a developer who wants to understand that code or add a second collection. It explains how dosctl uses a collection, describes each class and the catalog file, and then gives the steps to add a collection.
 
-## Class Hierarchy
+## How dosctl uses a collection
+
+Every command that needs the catalog is wrapped in `ensure_cache` (`src/dosctl/lib/decorators.py`). The wrapper creates the collection with `create_collection` (`factory.py`), calls `ensure_cache_is_present` on it and passes it to the command. The type it asks for is `tdc_release_14`, and the source URL and the cache directory come from `DEFAULT_COLLECTION_SOURCE` and `COLLECTION_CACHE_DIR` in `src/dosctl/config.py`. No flag selects a collection.
+
+A collection does four things in turn.
+
+1. It downloads the source page and writes a line per zip archive to the catalog file `games.txt` in the cache directory.
+2. It reads that file into memory when a command asks for games.
+3. It downloads a game's archive into the downloads directory.
+4. It unpacks the archive into the game's install directory.
+
+## The classes
+
+Three classes form a chain. `BaseCollection` declares the interface. `ArchiveOrgCollection` implements it for a page on the Internet Archive. `TotalDOSCollectionRelease14` fills in the one detail that differs between collections on that site.
 
 ```
-BaseCollection (abstract)
-├── ArchiveOrgCollection (intermediate base class)
-    └── TotalDOSCollectionRelease14 (specific implementation)
-    └── TotalDOSCollectionRelease15 (example of how to add new versions)
+BaseCollection
+└── ArchiveOrgCollection
+    └── TotalDOSCollectionRelease14
 ```
 
 ### BaseCollection
 
-The abstract base class that defines the interface all collections must implement:
+`BaseCollection` (`base.py`) is an abstract class. It stores the URL of the list in the attribute `source` and declares three abstract methods.
 
-- `get_games()` - Returns list of available games
-- `get_download_url(game_id)` - Gets download URL for a specific game
-- `download_game(game_id, destination)` - Downloads a game to local storage
+| Method | What it does |
+|--------|--------------|
+| `load()` | Makes the games available |
+| `get_games()` | Returns the games as a list of dicts |
+| `download_game(game_name, destination)` | Downloads one game into the directory `destination` |
 
 ### ArchiveOrgCollection
 
-An intermediate base class that provides common functionality for Archive.org-based collections:
+`ArchiveOrgCollection` (`archive_org.py`) implements `BaseCollection` for an Internet Archive page that lists zip archives. Its constructor takes `source`, `cache_dir` and `collection_name`, creates the cache directory when it does not exist, and reads the item name (the second-to-last part of the source URL split on `/`), which `_build_download_url` uses. The table lists its public methods.
 
-- **Cache Management** - Downloads and caches game lists locally
-- **Game Data Parsing** - Extracts game information from HTML listings
-- **Download Handling** - Manages HTTP downloads with progress bars
-- **ZIP Extraction** - Handles unzipping games to installation directories
+| Method | What it does |
+|--------|--------------|
+| `ensure_cache_is_present(force_refresh=False)` | Downloads the source page and writes `games.txt` when the file is missing or `force_refresh` is true; prints `Downloading game list from <source>...` and `✅ Game list refreshed successfully.` |
+| `load(force_refresh=False)` | Calls `ensure_cache_is_present`, then reads `games.txt` into memory |
+| `get_games()` | Returns every game as a dict with the keys `id`, `name`, `year` and `full_path`; reads `games.txt` first when nothing is loaded |
+| `find_game(game_id)` | Returns the game with that ID, or `None` |
+| `get_download_url(game_id)` | Returns the archive URL for the game, or `None` when the ID is unknown |
+| `download_game(game_id, destination, force=False)` | Downloads the archive to `<destination>/<name>.zip` with a progress bar and returns that path; returns the path without downloading when the file exists and `force` is false; returns `None` after printing an error when the download fails or stops short of the size the server announced |
+| `unzip_game(game_id, download_path, install_path)` | Unpacks `<download_path>/<name>.zip` into `install_path` |
 
-Key features:
-- Automatic cache directory creation
-- HTTP request handling with proper headers
-- Game ID generation using SHA1 hashes
-- Filename parsing to extract game names and years
-- Progress bars for downloads using tqdm
+`unzip_game` refuses an archive whose member paths are absolute, start with a drive letter or contain `..`, so an archive cannot write outside the install directory. It unpacks into a temporary directory next to `install_path` and renames that directory into place when every member has been written, so a failed unpack leaves no half-filled install directory.
 
-### Specific Implementations
+Three methods are meant to be overridden. `_build_download_url(encoded_full_path)` turns the URL-encoded archive path into the download URL; the base class raises `NotImplementedError`, so every subclass must define it. `_parse_filename(filename)` takes an archive's file name and returns a dict with `name` (the file name without `.zip`) and `year` (the first four digits in parentheses, or `None`). `_populate_games_data()` reads `games.txt` into memory and skips blank lines and lines without exactly four fields.
 
-Each specific collection version (like `TotalDOSCollectionRelease14`) extends `ArchiveOrgCollection` and provides:
+### TotalDOSCollectionRelease14
 
-- **Collection Name** - Human-readable name for the collection
-- **Download URL Pattern** - How to construct download URLs for this specific collection
-- **Custom Parsing** (optional) - Override filename parsing if the collection has different patterns
+`TotalDOSCollectionRelease14` (`archive_org.py`) is the one collection dosctl ships. It passes the name `Total DOS Collection Release 14` to the constructor and defines `_build_download_url` as `https://archive.org/download/<item name>/TDC_Release_14.zip/<encoded path>`.
 
-## Adding a New Collection
+## The catalog file
 
-To add support for a new collection version, follow these steps:
+`ensure_cache_is_present` finds every `href` ending in `.zip` on the source page and writes one line per archive to `games.txt`, with four fields separated by tabs. The table gives each field and where it comes from.
 
-### 1. Create the Collection Class
-
-See the example in `archive_org.py` for `TotalDOSCollectionRelease15`:
-
-```python
-class TotalDOSCollectionRelease15(ArchiveOrgCollection):
-    """
-    Specific implementation for Total DOS Collection Release 15.
-    """
-
-    def __init__(self, source: str, cache_dir: str):
-        super().__init__(source, cache_dir, "Total DOS Collection Release 15")
-
-    def _build_download_url(self, encoded_full_path: str) -> str:
-        """
-        Builds the download URL specific to TDC Release 15 structure.
-        """
-        return f"https://archive.org/download/{self.item_name}/TDC_Release_15.zip/{encoded_full_path}"
-
-    def _parse_filename(self, filename: str) -> Dict:
-        """
-        Override if Release 15 has different filename patterns.
-        """
-        # Custom parsing logic for Release 15 if needed
-        return super()._parse_filename(filename)
-```
-
-### 2. Register in Factory
-
-Add your new collection to `factory.py`:
-
-```python
-COLLECTION_TYPES = {
-    "tdc_release_14": TotalDOSCollectionRelease14,
-    "tdc_release_15": TotalDOSCollectionRelease15,  # Add this line
-}
-```
-
-### 3. Update Configuration
-
-Update the main configuration to include the new collection source URL and make it available as a command-line option.
-
-## Key Extension Points
-
-When creating a new collection, you can override these methods:
-
-### Required Override
-- `_build_download_url(encoded_full_path)` - Must implement URL construction for your collection
-
-### Optional Overrides
-- `_parse_filename(filename)` - Override if your collection has different filename patterns
-- `ensure_cache_is_present()` - Override if your collection uses a different caching mechanism
-- `_populate_games_data()` - Override if your collection has a different data format
-
-## File Structure
+| Field | Comes from |
+|-------|------------|
+| ID | The first 8 characters of the SHA-1 hash of the decoded archive path |
+| Name | `_parse_filename`: the file name without `.zip` |
+| Year | `_parse_filename`: the first four digits in parentheses, or empty when the file name has none |
+| Archive path | The last part of the `href`, URL-decoded |
 
 ```
-collections/
-├── README.md              # This file - architecture documentation
-├── __init__.py           # Package initialization
-├── base.py               # BaseCollection abstract class
-├── archive_org.py        # ArchiveOrgCollection and specific implementations
-└── factory.py            # Factory pattern for creating collections
+4e771c98	2112 (19xx)(Anonymous) [Adventure, Interactive Fiction]		TDC release 14/19xx/2112 (19xx)(Anonymous) [Adventure, Interactive Fiction].zip
 ```
 
-## Usage Example
+## Adding a collection
 
-```python
-from dosctl.collections.factory import create_collection
+Adding a collection on the Internet Archive whose page lists zip archives takes four steps.
 
-# Create a collection instance
-collection = create_collection(
-    "tdc_release_14",
-    "https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip",
-    "/path/to/cache"
-)
+1. Add a subclass of `ArchiveOrgCollection` to `archive_org.py` that passes the collection's name to the constructor and defines `_build_download_url`. `TotalDOSCollectionRelease14` is the model:
 
-# Load game data
-collection.load()
+    ```python
+    class TotalDOSCollectionRelease14(ArchiveOrgCollection):
+        def __init__(self, source: str, cache_dir: str):
+            super().__init__(source, cache_dir, "Total DOS Collection Release 14")
 
-# Get all games
-games = collection.get_games()
+        def _build_download_url(self, encoded_full_path: str) -> str:
+            return f"https://archive.org/download/{self.item_name}/TDC_Release_14.zip/{encoded_full_path}"
+    ```
 
-# Download a specific game
-collection.download_game("abc12345", "/path/to/downloads")
-```
+    Override `_parse_filename` too when the file names carry the year in another form.
 
-## Benefits of This Architecture
+2. Register the class under a new key in `COLLECTION_REGISTRY` in `factory.py`. `create_collection` raises `ValueError` for a key that is not there, and `get_available_collections` returns the keys.
 
-1. **Extensibility** - Easy to add new collection versions without modifying existing code
-2. **Code Reuse** - Common Archive.org functionality is shared across implementations
-3. **Testability** - Each layer can be tested independently
-4. **Maintainability** - Changes to specific collections don't affect others
-5. **Factory Pattern** - Centralized creation logic makes it easy to switch between collections
+3. Make dosctl use the new key by changing the type passed to `create_collection` in `ensure_cache` (`src/dosctl/lib/decorators.py`), and set `DEFAULT_COLLECTION_SOURCE` in `src/dosctl/config.py` to the new page.
 
-This design allows dosctl to support multiple game collections while keeping the codebase clean and maintainable.
+4. Run the tests of this package with `uv run pytest tests/test_collections.py`.
+
+## Files
+
+| File | Holds |
+|------|-------|
+| `base.py` | `BaseCollection` |
+| `archive_org.py` | `ArchiveOrgCollection` and `TotalDOSCollectionRelease14` |
+| `factory.py` | `COLLECTION_REGISTRY`, `create_collection` and `get_available_collections` |
+| `__init__.py` | Nothing; it marks the package |
+
+The user-facing side of the same flow (the `list`, `search`, `play` and `refresh` commands, and where the catalog and the games are stored) is in the main [README](../../../README.md).
