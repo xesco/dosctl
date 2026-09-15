@@ -248,17 +248,17 @@ Manages collections. A collection is a place dosctl reads games from. The built-
 | `dosctl col remove <name>` | Removes the collection and its catalog; installed games stay. Switches back to `tdc` when the removed one was in use; `tdc` itself cannot be removed |
 
 ```bash
-dosctl col add mine ~/dos-games
+dosctl col add mine ~/src/dosctl/src/dosgames
 dosctl col use mine
 dosctl col list
 ```
 ```
-Collection 'mine' (local_file) added: /home/you/dos-games
+Collection 'mine' (local_file) added: /Users/xesco/src/dosctl/src/dosgames
 Use 'dosctl col use mine' to switch to it.
 Now using collection 'mine'.
 Collections:
   tdc   tdc_release_14  https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip
-* mine  local_file      /home/you/dos-games
+* mine  local_file      /Users/xesco/src/dosctl/src/dosgames
 ```
 
 ### `dosctl net host GAME_ID|ALIAS [COMMAND_PARTS]...`
@@ -352,7 +352,7 @@ Downloading game list from https://ia800906.us.archive.org/view_archive.php?arch
 When the catalog comes from a directory (see [Where the games come from](#where-the-games-come-from)), the last two lines are replaced by a count of the archives found:
 
 ```
-✅ Found 2 games in '/home/you/dos-games'.
+✅ Found 5 games in '/Users/xesco/src/dosctl/src/dosgames'.
 ```
 
 ### `dosctl version`
@@ -406,17 +406,20 @@ The data directory holds the catalogs, the downloaded archives and the installed
 By default the catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive, the built-in collection `tdc`. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. To play archives of your own, add the directory that holds them as a collection and switch to it (see [`dosctl col`](#dosctl-col)):
 
 ```bash
-dosctl col add mine ~/dos-games
+dosctl col add mine ~/src/dosctl/src/dosgames
 dosctl col use mine
 dosctl list
 ```
 ```
-Collection 'mine' (local_file) added: /home/you/dos-games
+Collection 'mine' (local_file) added: /Users/xesco/src/dosctl/src/dosgames
 Use 'dosctl col use mine' to switch to it.
 Now using collection 'mine'.
 Available Games:
-  [b1500715] (1993) Doom (1993)(id Software)
-  [fe76b3eb] (1990) Prince of Persia (1990)
+  [d29c4f41] (1992) Commander Keen in Keen Dreams v1.13 EGA [SW] (1992)(Softdisk Publishing) [Action]
+  [e32da5d5] (1993) DOOM (Installer) [SW] (1993)(id Software, Inc.) [Action]
+  [6e98fe0d] (1993) Duke Nukem II (Installer) [SW] (1993)(Apogee Software, Ltd.) [Action]
+  [0ed25d7b] (1992) Jill of The Jungle [SW] (1992)(Epic MegaGames, Inc) [Action]
+  [acc67a02] (1992) Wolfenstein 3D (Installer) [SW] (1992)(Apogee Software, Ltd.) [Action]
 ```
 
 dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension. Its year is the first four digits in parentheses in the file name. Its ID is the hash of the file's path relative to the directory. The directory is read again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`. `info` never reports such a game as downloaded. `delete` never removes a file from the directory.
