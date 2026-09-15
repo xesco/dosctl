@@ -424,7 +424,7 @@ Available Games:
 
 dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension. Its year is the first four digits in parentheses in the file name. Its ID is the hash of the file's path relative to the directory. The directory is read again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`. `info` never reports such a game as downloaded. `delete` never removes a file from the directory.
 
-Two environment variables select a collection for one shell without adding it. They win over the collection in use. The table names them. `dosctl col list` prints a line saying so while they are set.
+Two environment variables select a collection for one shell without adding it, and the table names them. While either variable is set, dosctl reads that collection instead of the one in use, and `dosctl col list` prints a line that says so.
 
 | Variable | Value |
 |----------|-------|
