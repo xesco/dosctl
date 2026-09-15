@@ -242,7 +242,7 @@ Manages collections. A collection is a place dosctl reads games from. The built-
 
 | Subcommand | What it does |
 |------------|--------------|
-| `dosctl col add <name> <source> [-t, --type <type>]` | Adds a collection; `<source>` is a directory or a URL, and `--type` is `local_file` (the default for a directory) or `tdc14` (the default for a URL). Prints an error when the directory does not exist or the name is taken or invalid |
+| `dosctl col add <name> <source> [-t, --type <type>]` | Adds a collection; `<source>` is a directory or a URL, and `--type` is `local_file` (the default for a directory) or `tdc_release_14` (the default for a URL). Prints an error when the directory does not exist or the name is taken or invalid |
 | `dosctl col use <name>` | Makes the collection the one in use |
 | `dosctl col list` | Prints every collection with its type and source, `*` marking the one in use |
 | `dosctl col remove <name>` | Removes the collection and its catalog; installed games stay. Switches back to `tdc` when the removed one was in use; `tdc` itself cannot be removed |
@@ -257,8 +257,8 @@ Collection 'mine' (local_file) added: /home/you/dos-games
 Use 'dosctl col use mine' to switch to it.
 Now using collection 'mine'.
 Collections:
-  tdc   tdc14       https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip
-* mine  local_file  /home/you/dos-games
+  tdc   tdc_release_14  https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip
+* mine  local_file      /home/you/dos-games
 ```
 
 ### `dosctl net host GAME_ID|ALIAS [COMMAND_PARTS]...`
@@ -425,7 +425,7 @@ Two environment variables select a collection for one shell without adding it. T
 
 | Variable | Value |
 |----------|-------|
-| `DOSCTL_COLLECTION` | The type: `local_file` or `tdc14` |
+| `DOSCTL_COLLECTION` | The type: `local_file` or `tdc_release_14` |
 | `DOSCTL_COLLECTION_SOURCE` | The directory, or the URL of the Internet Archive page |
 
 You can add collections of other kinds (see [src/dosctl/collections/README.md](src/dosctl/collections/README.md)).

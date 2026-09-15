@@ -13,7 +13,7 @@ from dosctl.config import COLLECTION_CACHE_DIR, CONFIG_DIR, TDC_RELEASE_14_SOURC
 
 COLLECTIONS_FILE = CONFIG_DIR / "collections.json"
 BUILTIN_NAME = "tdc"
-BUILTIN = {"type": "tdc14", "source": TDC_RELEASE_14_SOURCE}
+BUILTIN = {"type": "tdc_release_14", "source": TDC_RELEASE_14_SOURCE}
 ENV_NAME = "env"
 _NAME_RE = re.compile(r"^[a-z0-9][a-z0-9\-]*$")
 

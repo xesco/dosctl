@@ -7,7 +7,7 @@ from dosctl.collections.factory import create_collection, get_available_collecti
 class TestCreateCollection:
     def test_creates_known_collection(self, tmp_path):
         collection = create_collection(
-            "tdc14",
+            "tdc_release_14",
             source="https://example.com",
             cache_dir=str(tmp_path),
         )
@@ -17,9 +17,9 @@ class TestCreateCollection:
         with pytest.raises(ValueError) as exc_info:
             create_collection("bad_type", source="https://example.com", cache_dir=str(tmp_path))
         assert "bad_type" in str(exc_info.value)
-        assert "tdc14" in str(exc_info.value)
+        assert "tdc_release_14" in str(exc_info.value)
 
 
 class TestGetAvailableCollections:
-    def test_includes_tdc14(self):
-        assert "tdc14" in get_available_collections()
+    def test_includes_tdc_release_14(self):
+        assert "tdc_release_14" in get_available_collections()

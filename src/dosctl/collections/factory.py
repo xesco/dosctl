@@ -4,7 +4,7 @@ from .local_file import LocalFileCollection
 
 # Registry of available collection implementations
 COLLECTION_REGISTRY = {
-    "tdc14": TotalDOSCollectionRelease14,
+    "tdc_release_14": TotalDOSCollectionRelease14,
     "local_file": LocalFileCollection,
 }
 
@@ -13,7 +13,7 @@ def create_collection(collection_type: str, source: str, cache_dir: str):
     Factory function to create collection instances.
 
     Args:
-        collection_type: The type of collection (e.g., "tdc14")
+        collection_type: The type of collection (e.g., "tdc_release_14")
         source: The source of the collection: a URL, or a directory for "local_file"
         cache_dir: Directory for caching collection data
 

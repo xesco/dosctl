@@ -36,7 +36,7 @@ def col():
 @click.option(
     "-t", "--type", "collection_type",
     type=click.Choice(get_available_collections()),
-    help="Collection type. Default: local_file for a directory, tdc14 for a URL.",
+    help="Collection type. Default: local_file for a directory, tdc_release_14 for a URL.",
 )
 def col_add(name, source, collection_type):
     """Add collection NAME reading from SOURCE.
@@ -44,7 +44,7 @@ def col_add(name, source, collection_type):
     SOURCE is a directory of zip archives or an Internet Archive URL.
     """
     if collection_type is None:
-        collection_type = "tdc14" if source.startswith(("http://", "https://")) else "local_file"
+        collection_type = "tdc_release_14" if source.startswith(("http://", "https://")) else "local_file"
 
     if collection_type == "local_file":
         directory = Path(source).expanduser()
@@ -80,14 +80,11 @@ def col_list():
     """List the collections; * marks the one in use."""
     active = get_active_name()
     collections = list_collections()
-    name_width = max(len(name) for name in collections)
-    type_width = max(len(entry["type"]) for entry in collections.values())
+    width = max(len(name) for name in collections)
     click.echo("Collections:")
     for name, entry in collections.items():
         marker = "*" if name == active else " "
-        click.echo(
-            f"{marker} {name.ljust(name_width)}  {entry['type'].ljust(type_width)}  {entry['source']}"
-        )
+        click.echo(f"{marker} {name.ljust(width)}  {entry['type'].ljust(14)}  {entry['source']}")
 
     override = env_override()
     if override:
