@@ -1,12 +1,12 @@
 # dosctl
 
-dosctl is a command-line tool that plays DOS games in DOSBox. Its catalog (the list of games it can play) comes from the Total DOS Collection Release 14 on the Internet Archive and holds over 20,000 entries. When you play a game for the first time, dosctl downloads and starts it in DOSBox with the game's directory as drive C:. This page is for a person who wants to play those games from a terminal on Linux, macOS or Windows. It shows how to install dosctl and play your first game, then describes every command with its flags and output and every file dosctl writes.
+dosctl is a command-line tool that plays DOS games in DOSBox. Its catalog (the list of games it can play) comes either from the Total DOS Collection Release 14 on the Internet Archive, which holds over 20,000 entries, or from a directory of zip archives on your machine (see [Where the games come from](#where-the-games-come-from)). When you play a game for the first time, dosctl unpacks it, downloading it first when it comes from the Internet Archive, and starts it in DOSBox with the game's directory as drive C:. This page is for a person who wants to play those games from a terminal on Linux, macOS or Windows. It shows how to install dosctl and play your first game, then describes every command with its flags and output and every file dosctl writes.
 
 ![dosctl Screenshot](dosctl-screenshot.png)
 
 ## Installation
 
-dosctl needs Python 3.8 or newer and DOSBox. dosctl runs the first DOSBox program it finds in the order of the table below. Linux and macOS are the primary platforms, and Windows support is experimental. Some archives from the early 1990s use a compression method (PKZIP Implode) that Python cannot read; dosctl unpacks those with the `unzip` command, which macOS ships and Linux package managers provide as `unzip`.
+dosctl needs Python 3.8 or newer and DOSBox. dosctl runs the first DOSBox program it finds in the order of the table below. Linux and macOS are the primary platforms, and Windows support is experimental. Some archives from the early 1990s use a compression method (PKZIP Implode) that Python cannot read; dosctl unpacks those with the `unzip` command, which macOS includes and Linux package managers provide.
 
 | Platform | DOSBox programs dosctl looks for, in order |
 |----------|-------------------------------------------|
@@ -73,7 +73,7 @@ Every game in the catalog has an ID of 8 characters. `list` and `search` print t
 
 ## Commands
 
-This section describes what every command does, its flags and what it prints. Where a command takes `GAME_ID|ALIAS`, you can pass an alias (a name you gave the game with `dosctl alias set`, see [dosctl alias](#dosctl-alias)) instead of the ID. `dosctl --help` lists the commands, and `dosctl <command> --help` shows a command's flags.
+This section describes what every command does, its flags and what it prints. Where a command takes `GAME_ID|ALIAS`, you can pass an alias instead of the ID (an alias is a name you give the game with `dosctl alias set`; see [dosctl alias](#dosctl-alias)). `dosctl --help` lists the commands, and `dosctl <command> --help` shows a command's flags.
 
 ### `dosctl list`
 
@@ -115,7 +115,7 @@ Found 19 game(s):
 
 ### `dosctl play GAME_ID|ALIAS [COMMAND_PARTS]...`
 
-Downloads and installs the game when it is not installed, starts DOSBox with the install directory as drive C:, runs one command inside DOSBox and closes DOSBox when that command ends. COMMAND_PARTS are the words after the ID, joined by spaces into the command, and they are optional. dosctl chooses the command by the first rule below that applies.
+Installs the game when it is not installed, downloading it first when it comes from the Internet Archive. It then starts DOSBox with the install directory as drive C:, runs one command inside DOSBox and closes DOSBox when that command ends. COMMAND_PARTS are the words after the ID, joined by spaces into the command, and they are optional. dosctl chooses the command by the first rule below that applies.
 
 | When | Command that runs |
 |------|-------------------|
@@ -217,7 +217,7 @@ Are you sure you want to continue? [y/N]: y
 
 ### `dosctl alias`
 
-Manages aliases. An alias is a name you give a game ID, and every command that takes `GAME_ID|ALIAS` (`play`, `inspect`, `info`, `delete`, `net host` and `net join`) accepts the alias in place of the ID. An alias starts with a lowercase letter or a digit and contains only lowercase letters, digits and hyphens. The three subcommands create, remove and list aliases.
+Manages aliases. An alias is a name you give a game ID. Every command that takes `GAME_ID|ALIAS` (`play`, `inspect`, `info`, `delete`, `net host` and `net join`) accepts the alias in place of the ID. An alias starts with a lowercase letter or a digit and contains only lowercase letters, digits and hyphens. The three subcommands create, remove and list aliases.
 
 | Subcommand | What it does |
 |------------|--------------|
@@ -263,9 +263,9 @@ Collections:
 
 ### `dosctl net host GAME_ID|ALIAS [COMMAND_PARTS]...`
 
-Hosts a multiplayer game. IPX is the network protocol that DOS games with a network option use. DOSBox emulates IPX and carries it over UDP, so one player's DOSBox runs an IPX server and each other player's DOSBox connects to that server. `net host` installs the game and chooses the command as `play` does, starts DOSBox with an IPX server on a UDP port, and runs the command. DOSBox stays open after the game exits, so you can start the game again without connecting again. Choose IPX in the game's own multiplayer menu once it runs.
+Hosts a multiplayer game. IPX is the network protocol that DOS games with a network option use. DOSBox emulates IPX over UDP. One player's DOSBox runs an IPX server and the other players' DOSBox instances connect to that server. `net host` installs the game and chooses the command as `play` does, starts DOSBox with an IPX server on a UDP port, and runs the command. DOSBox stays open after the game exits, so you can start the game again without connecting again. Choose IPX in the game's own multiplayer menu once it runs.
 
-By default `net host` serves your local network, so it prints your local IP address and the `net join` command the other players run. With `--internet`, it prepares play over the internet in three steps.
+By default `net host` serves your local network, so it prints your local IP address and the `net join` command for other players to run. With `--internet`, it prepares play over the internet in three steps.
 
 1. It asks your router by UPnP (a router feature that lets a program on your network ask for a port to be forwarded to it) to forward the UDP port to your machine. When UPnP fails, `net host` prints a message and continues. When the router's address is a carrier-grade NAT address (common with Starlink), `net host` says so, because port forwarding cannot work there and another player has to host.
 2. It finds your public IP address, from the router when UPnP succeeded and otherwise from `api.ipify.org` or `checkip.amazonaws.com`. When neither answers, `net host` says so and hosts without a discovery code.

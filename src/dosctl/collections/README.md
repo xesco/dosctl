@@ -43,7 +43,7 @@ BaseCollection
 
 ### CatalogCollection
 
-`CatalogCollection` (`base.py`) implements `BaseCollection` for a collection whose games are zip archives and whose list of games is held in memory. Its constructor takes `source`, `cache_dir` and `collection_name`. It creates the cache directory when it does not exist. Two methods are abstract: `ensure_cache_is_present(force_refresh=False)` makes the list available, and `_populate_games_data()` fills the list in memory. The table lists the methods every subclass gets.
+`CatalogCollection` (`base.py`) implements `BaseCollection` for a collection whose games are zip archives and whose list of games is held in memory. Its constructor takes `source`, `cache_dir` and `collection_name`. It creates the cache directory when it does not exist. Two methods are abstract. `ensure_cache_is_present(force_refresh=False)` makes the list available, and `_populate_games_data()` fills the list in memory. The table lists the methods every subclass gets.
 
 | Method | What it does |
 |--------|--------------|
