@@ -96,7 +96,7 @@ Available Games:
 
 ### `dosctl search [QUERY]`
 
-Prints the games whose name matches QUERY, in the same format as `list`. QUERY is a regular expression matched anywhere in the name, so `Dune` also matches `Prairie Dunes`. The match ignores case unless you pass `--case-sensitive`. You can omit QUERY when you filter by year. Without QUERY and without a year, `search` prints an error.
+Prints the games whose names match QUERY, in the same format as `list`. QUERY is a regular expression that matches anywhere in the name, so `Dune` also matches `Prairie Dunes`. `search` ignores case unless you pass `--case-sensitive`. You can omit QUERY when you pass `--year`. Without QUERY and without `--year`, `search` prints an error.
 
 | Flag | What it does |
 |------|--------------|
@@ -238,7 +238,7 @@ Defined aliases:
 
 ### `dosctl col`
 
-Manages collections. A collection is a place dosctl reads games from. The built-in collection `tdc` is the Total DOS Collection Release 14 on the Internet Archive. A collection you add is a directory of zip archives on your machine (see [Where the games come from](#where-the-games-come-from)) or another Internet Archive page. One collection is in use at a time. Every command that needs a game or the list of games reads that one. A collection name starts with a lowercase letter or a digit and contains only lowercase letters, digits and hyphens. The four subcommands add, switch, list and remove collections.
+Manages collections. A collection is a place dosctl reads games from. The built-in collection `tdc` is the Total DOS Collection Release 14 on the Internet Archive. A collection you add is a directory of zip archives on your machine (see [Where the games come from](#where-the-games-come-from)) or another Internet Archive page. One collection is in use at a time. Every command that needs a game or the catalog reads that one. A collection name starts with a lowercase letter or a digit and contains only lowercase letters, digits and hyphens. The four subcommands add, use, list and remove collections.
 
 | Subcommand | What it does |
 |------------|--------------|
@@ -269,7 +269,7 @@ By default `net host` serves your local network, so it prints your local IP addr
 
 1. It asks your router by UPnP (a router feature that lets a program on your network ask for a port to be forwarded to it) to forward the UDP port to your machine. When UPnP fails, `net host` prints a message and continues. When the router's address is a carrier-grade NAT address (common with Starlink), `net host` says so, because port forwarding cannot work there and another player has to host.
 2. It finds your public IP address, from the router when UPnP succeeded and otherwise from `api.ipify.org` or `checkip.amazonaws.com`. When neither answers, `net host` says so and hosts without a discovery code.
-3. It prints a discovery code. The code encodes the public IP address and the port in the form `WORD-NNNNN`. When the port is not 19900, a `-Pxxxx` suffix carries the port.
+3. It prints a discovery code. The code encodes the public IP address and the port in the form `WORD-NNNNN`. When the port is not 19900, the code ends with a `-Pxxxx` suffix that gives the port.
 
 | Flag | What it does |
 |------|--------------|
@@ -363,7 +363,7 @@ Prints the version of dosctl, as `dosctl -v` does:
 dosctl version
 ```
 ```
-dosctl 1.9.4
+dosctl 1.11.0
 ```
 
 ## Files
@@ -422,9 +422,9 @@ Available Games:
   [acc67a02] (1992) Wolfenstein 3D (Installer) [SW] (1992)(Apogee Software, Ltd.) [Action]
 ```
 
-dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension. Its year is the first four digits in parentheses in the file name. Its ID is the hash of the file's path relative to the directory. The directory is read again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`. `info` never reports such a game as downloaded. `delete` never removes a file from the directory.
+dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension. The game's year is the first four digits in parentheses in the file name. The game's ID is the first 8 characters of the SHA-1 hash of the file's path relative to the directory. dosctl reads the directory again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`. `info` never reports a game from the directory as downloaded. `delete` never removes a file from the directory.
 
-Two environment variables select a collection for one shell without adding it. They win over the collection in use. The table names them. `dosctl col list` prints a line saying so while they are set.
+Two environment variables select a collection for one shell without adding it. They take precedence over the collection in use. While the variables are set, `dosctl col list` prints a line saying so. The table names them.
 
 | Variable | Value |
 |----------|-------|
