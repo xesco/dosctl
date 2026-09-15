@@ -18,6 +18,7 @@ def ensure_cache(f):
             resolved.type,
             source=resolved.source,
             cache_dir=resolved.cache_dir,
+            scope=resolved.name,
         )
         # This will auto-refresh if the cache is missing
         collection.ensure_cache_is_present()

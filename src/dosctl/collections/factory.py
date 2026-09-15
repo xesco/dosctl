@@ -1,14 +1,16 @@
 """Collection factory for creating appropriate collection instances."""
 from .archive_org import TotalDOSCollectionRelease14
 from .local_file import LocalFileCollection
+from .s3 import S3Collection
 
 # Registry of available collection implementations
 COLLECTION_REGISTRY = {
     "tdc_release_14": TotalDOSCollectionRelease14,
     "local_file": LocalFileCollection,
+    "s3": S3Collection,
 }
 
-def create_collection(collection_type: str, source: str, cache_dir: str):
+def create_collection(collection_type: str, source: str, cache_dir: str, scope: str = None):
     """
     Factory function to create collection instances.
 
@@ -16,6 +18,8 @@ def create_collection(collection_type: str, source: str, cache_dir: str):
         collection_type: The type of collection (e.g., "tdc_release_14")
         source: The source of the collection: a URL, or a directory for "local_file"
         cache_dir: Directory for caching collection data
+        scope: Name of the subdirectory of downloads/ and installed/ that holds
+            this collection's games; None keeps the legacy flat layout
 
     Returns:
         An instance of the appropriate collection class
@@ -28,7 +32,9 @@ def create_collection(collection_type: str, source: str, cache_dir: str):
         raise ValueError(f"Unknown collection type '{collection_type}'. Available: {available}")
 
     collection_class = COLLECTION_REGISTRY[collection_type]
-    return collection_class(source, cache_dir)
+    collection = collection_class(source, cache_dir)
+    collection.scope = scope
+    return collection
 
 def get_available_collections():
     """Returns a list of available collection types."""

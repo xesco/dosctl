@@ -12,6 +12,8 @@ GAME = {"id": "abc12345", "name": "Doom (1993)", "year": "1993", "full_path": "D
 def _make_collection(game=GAME):
     mock = MagicMock()
     mock.find_game.side_effect = lambda gid: game if gid == game["id"] else None
+    mock.scope = None
+    mock.installed_dir_for.side_effect = lambda base: base
     return mock
 
 
@@ -30,7 +32,7 @@ class TestInfoCommand:
         runner = CliRunner()
         with _patch_aliases(tmp_path):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
+                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
                         with patch("dosctl.commands.info.get_game_command", return_value=None):
                             mock_col.return_value = _make_collection()
@@ -56,7 +58,7 @@ class TestInfoCommand:
         runner = CliRunner()
         with _patch_aliases(tmp_path):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
+                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
                         with patch("dosctl.commands.info.get_game_command", return_value=None):
                             mock_col.return_value = _make_collection(game)
@@ -75,7 +77,7 @@ class TestInfoStatus:
         runner = CliRunner()
         with _patch_aliases(tmp_path):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
+                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
                         with patch("dosctl.commands.info.get_game_command", return_value=None):
                             mock_col.return_value = _make_collection()
@@ -93,7 +95,7 @@ class TestInfoStatus:
         runner = CliRunner()
         with _patch_aliases(tmp_path):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
+                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", downloads):
                         with patch("dosctl.commands.info.get_game_command", return_value=None):
                             mock_col.return_value = _make_collection()
@@ -110,7 +112,7 @@ class TestInfoStatus:
         runner = CliRunner()
         with _patch_aliases(tmp_path):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", installed):
+                with patch("dosctl.lib.game.INSTALLED_DIR", installed):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
                         with patch("dosctl.commands.info.get_game_command", return_value=None):
                             mock_col.return_value = _make_collection()
@@ -130,7 +132,7 @@ class TestInfoAliasAndCommand:
         runner = CliRunner()
         with _patch_aliases(tmp_path, {"doom": {"id": "abc12345", "name": "Doom (1993)"}}):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
+                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
                         with patch("dosctl.commands.info.get_game_command", return_value=None):
                             mock_col.return_value = _make_collection()
@@ -143,7 +145,7 @@ class TestInfoAliasAndCommand:
         runner = CliRunner()
         with _patch_aliases(tmp_path):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
+                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
                         with patch("dosctl.commands.info.get_game_command", return_value=None):
                             mock_col.return_value = _make_collection()
@@ -155,7 +157,7 @@ class TestInfoAliasAndCommand:
         runner = CliRunner()
         with _patch_aliases(tmp_path):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
+                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
                         with patch("dosctl.commands.info.get_game_command", return_value="DOOM.EXE"):
                             mock_col.return_value = _make_collection()
@@ -168,7 +170,7 @@ class TestInfoAliasAndCommand:
         runner = CliRunner()
         with _patch_aliases(tmp_path):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
+                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
                         with patch("dosctl.commands.info.get_game_command", return_value=None):
                             mock_col.return_value = _make_collection()
@@ -181,7 +183,7 @@ class TestInfoAliasAndCommand:
         runner = CliRunner()
         with _patch_aliases(tmp_path, {"doom": {"id": "abc12345", "name": "Doom (1993)"}}):
             with patch("dosctl.lib.decorators.create_collection") as mock_col:
-                with patch("dosctl.commands.info.INSTALLED_DIR", tmp_path / "installed"):
+                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"):
                     with patch("dosctl.commands.info.DOWNLOADS_DIR", tmp_path / "downloads"):
                         with patch("dosctl.commands.info.get_game_command", return_value=None):
                             mock_col.return_value = _make_collection()

@@ -24,6 +24,7 @@ def refresh(force):
         resolved.type,
         source=resolved.source,
         cache_dir=resolved.cache_dir,
+        scope=resolved.name,
     )
 
     click.echo("Rebuilding the catalog...")

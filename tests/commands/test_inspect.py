@@ -11,6 +11,8 @@ def _make_collection(game_id="abc12345", game_name="Doom"):
     mock.find_game.side_effect = lambda gid: (
         {"id": game_id, "name": game_name} if gid == game_id else None
     )
+    mock.scope = None
+    mock.installed_dir_for.side_effect = lambda base: base
     return mock
 
 
@@ -18,7 +20,7 @@ class TestInspectNotInstalled:
     def test_error_when_game_not_installed(self, tmp_path):
         runner = CliRunner()
         with patch("dosctl.lib.decorators.create_collection") as mock_col, \
-             patch("dosctl.commands.inspect.INSTALLED_DIR", tmp_path):
+             patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
             mock_col.return_value = _make_collection()
             result = runner.invoke(cli, ["inspect", "abc12345"])
         assert "not installed" in result.output
@@ -40,7 +42,7 @@ class TestInspectInstalledGame:
         self._setup_game(tmp_path)
         runner = CliRunner()
         with patch("dosctl.lib.decorators.create_collection") as mock_col, \
-             patch("dosctl.commands.inspect.INSTALLED_DIR", tmp_path):
+             patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
             mock_col.return_value = _make_collection()
             result = runner.invoke(cli, ["inspect", "abc12345"])
         assert "doom.exe" in result.output
@@ -52,7 +54,7 @@ class TestInspectInstalledGame:
         self._setup_game(tmp_path)
         runner = CliRunner()
         with patch("dosctl.lib.decorators.create_collection") as mock_col, \
-             patch("dosctl.commands.inspect.INSTALLED_DIR", tmp_path):
+             patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
             mock_col.return_value = _make_collection()
             result = runner.invoke(cli, ["inspect", "--executables", "abc12345"])
         assert "doom.exe" in result.output
@@ -63,7 +65,7 @@ class TestInspectInstalledGame:
         (tmp_path / "abc12345").mkdir()
         runner = CliRunner()
         with patch("dosctl.lib.decorators.create_collection") as mock_col, \
-             patch("dosctl.commands.inspect.INSTALLED_DIR", tmp_path):
+             patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
             mock_col.return_value = _make_collection()
             result = runner.invoke(cli, ["inspect", "abc12345"])
         assert "No files found" in result.output
@@ -74,7 +76,7 @@ class TestInspectInstalledGame:
         (game_dir / "readme.txt").write_text("txt")
         runner = CliRunner()
         with patch("dosctl.lib.decorators.create_collection") as mock_col, \
-             patch("dosctl.commands.inspect.INSTALLED_DIR", tmp_path):
+             patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
             mock_col.return_value = _make_collection()
             result = runner.invoke(cli, ["inspect", "--executables", "abc12345"])
         assert "No executable files found" in result.output
@@ -87,7 +89,7 @@ class TestInspectInstalledGame:
         mock.find_game.return_value = None
         runner = CliRunner()
         with patch("dosctl.lib.decorators.create_collection") as mock_col, \
-             patch("dosctl.commands.inspect.INSTALLED_DIR", tmp_path):
+             patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
             mock_col.return_value = mock
             result = runner.invoke(cli, ["inspect", "unknown1"])
         assert "Unknown Game" in result.output

@@ -12,12 +12,14 @@ def _make_collection(game_id="abc12345", game_name="Doom"):
     mock.find_game.side_effect = lambda gid: (
         {"id": game_id, "name": game_name} if gid == game_id else None
     )
+    mock.scope = None
+    mock.installed_dir_for.side_effect = lambda base: base
     return mock
 
 
 def _patch_dirs(tmp_path):
     return (
-        patch("dosctl.commands.delete.INSTALLED_DIR", tmp_path / "installed"),
+        patch("dosctl.lib.game.INSTALLED_DIR", tmp_path / "installed"),
         patch("dosctl.commands.delete.DOWNLOADS_DIR", tmp_path / "downloads"),
         patch("dosctl.lib.config_store.CONFIG_FILE", tmp_path / "play_config.json"),
         patch("dosctl.lib.aliases.ALIASES_FILE", tmp_path / "aliases.json"),

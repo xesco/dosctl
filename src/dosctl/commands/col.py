@@ -36,15 +36,22 @@ def col():
 @click.option(
     "-t", "--type", "collection_type",
     type=click.Choice(get_available_collections()),
-    help="Collection type. Default: local_file for a directory, tdc_release_14 for a URL.",
+    help="Collection type. Default: local_file for a directory, tdc_release_14 for a URL, "
+         "s3 for an s3:// or s3+http(s):// bucket URI.",
 )
 def col_add(name, source, collection_type):
     """Add collection NAME reading from SOURCE.
 
-    SOURCE is a directory of zip archives or an Internet Archive URL.
+    SOURCE is a directory of zip archives, an Internet Archive URL, or an
+    S3 bucket URI (s3://bucket or s3+https://host/bucket).
     """
     if collection_type is None:
-        collection_type = "tdc_release_14" if source.startswith(("http://", "https://")) else "local_file"
+        if source.startswith(("http://", "https://")):
+            collection_type = "tdc_release_14"
+        elif source.startswith(("s3://", "s3+http://", "s3+https://")):
+            collection_type = "s3"
+        else:
+            collection_type = "local_file"
 
     if collection_type == "local_file":
         directory = Path(source).expanduser()

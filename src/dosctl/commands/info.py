@@ -1,10 +1,11 @@
 """Info command — show catalog metadata and local status for a game."""
 import click
 
-from dosctl.config import DOWNLOADS_DIR, INSTALLED_DIR
+from dosctl.config import DOWNLOADS_DIR
 from dosctl.lib.aliases import list_aliases, resolve_game_id
 from dosctl.lib.config_store import get_game_command
 from dosctl.lib.decorators import ensure_cache
+from dosctl.lib.game import resolve_install_path
 
 
 @click.command()
@@ -26,7 +27,7 @@ def info(collection, game_id):
     )
 
     # Determine status and relevant paths
-    install_path = INSTALLED_DIR / game_id
+    install_path = resolve_install_path(collection, game_id)
     archive_path = DOWNLOADS_DIR / f"{game['name']}.zip"
 
     if install_path.exists():

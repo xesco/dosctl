@@ -242,7 +242,7 @@ Manages collections. A collection is a place dosctl reads games from. The built-
 
 | Subcommand | What it does |
 |------------|--------------|
-| `dosctl col add <name> <source> [-t, --type <type>]` | Adds a collection; `<source>` is a directory or a URL, and `--type` is `local_file` (the default for a directory) or `tdc_release_14` (the default for a URL). Prints an error when the directory does not exist or the name is taken or invalid |
+| `dosctl col add <name> <source> [-t, --type <type>]` | Adds a collection; `<source>` is a directory, a URL, or an S3 bucket URI, and `--type` is `local_file` (the default for a directory), `tdc_release_14` (the default for a URL) or `s3` (the default for an `s3://` or `s3+http(s)://` URI). Prints an error when the directory does not exist or the name is taken or invalid |
 | `dosctl col use <name>` | Makes the collection the one in use |
 | `dosctl col list` | Prints every collection with its type and source, `*` marking the one in use |
 | `dosctl col remove <name>` | Removes the collection and its catalog; installed games stay. Switches back to `tdc` when the removed one was in use; `tdc` itself cannot be removed |
@@ -386,24 +386,34 @@ The config directory holds four files, each created when first needed:
   ipx.conf           # A DOSBox config that turns IPX on, written for `net host` and `net join`
 ```
 
-The data directory holds the catalogs, the downloaded archives and the installed games. A directory collection has no catalog file, because dosctl reads the directory itself:
+The data directory holds the catalogs, the downloaded archives and the installed games. A directory collection has no catalog file, because dosctl reads the directory itself. Games install into their own subdirectory per collection, named after the collection, so two collections cannot collide on the same game ID:
 
 ```
 <data-dir>/
   collections/
     games.txt        # The catalog of `tdc`: one line per game with its ID, name, year and archive path
     <name>/
-      games.txt      # The catalog of an added Internet Archive collection
+      games.txt      # The catalog of an added Internet Archive or S3 collection
   downloads/
     <game name>.zip  # A game's archive, kept after installation
+    <collection>/    # An added collection's downloads, when it has installed games
+      <game name>.zip
   installed/
-    <game-id>/       # A game's install directory, the unpacked archive
+    <game-id>/       # A game's install directory of `tdc`, the unpacked archive
       dosbox.conf    # Optional; DOSBox options for this game alone
+    <collection>/
+      <game-id>/     # A game's install directory of an added collection
+        dosbox.conf
 ```
 
 ## Where the games come from
 
-By default the catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive, the built-in collection `tdc`. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. To play archives of your own, add the directory that holds them as a collection and switch to it (see [`dosctl col`](#dosctl-col)):
+By default the catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive, the built-in collection `tdc`. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. To play archives of your own, add the directory that holds them as a collection and switch to it (see [`dosctl col`](#dosctl-col)). Archives can also come from an S3-compatible bucket (AWS S3, MinIO, Backblaze B2, DigitalOcean Spaces, Wasabi) that allows public reads:
+
+```bash
+dosctl col add aws-mirror s3://my-bucket/dosgames
+dosctl col add minio s3+https://minio.example.com:9000/games
+```
 
 ```bash
 dosctl col add -t local_file mine ~/src/dosctl/src/dosgames
@@ -424,12 +434,14 @@ Available Games:
 
 dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension. The game's year is the first four digits in parentheses in the file name. The game's ID is the first 8 characters of the SHA-1 hash of the file's path relative to the directory. dosctl reads the directory again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`. `info` never reports a game from the directory as downloaded. `delete` never removes a file from the directory.
 
+Every added collection installs its games into `installed/<collection>/` (and keeps its downloads in `downloads/<collection>/`), so the same game ID in two collections stays two installations. When a collection first installs a game that was installed before this layout existed, dosctl moves the old flat directory into the collection's scope (see [Files](#files)).
+
 Two environment variables select a collection for one shell without adding it. They take precedence over the collection in use. While the variables are set, `dosctl col list` prints a line saying so. The table names them.
 
 | Variable | Value |
 |----------|-------|
-| `DOSCTL_COLLECTION` | The type: `local_file` or `tdc_release_14` |
-| `DOSCTL_COLLECTION_SOURCE` | The directory, or the URL of the Internet Archive page |
+| `DOSCTL_COLLECTION` | The type: `local_file`, `tdc_release_14` or `s3` |
+| `DOSCTL_COLLECTION_SOURCE` | The directory, the URL of the Internet Archive page, or the S3 bucket URI |
 
 You can add collections of other kinds (see [src/dosctl/collections/README.md](src/dosctl/collections/README.md)).
 
