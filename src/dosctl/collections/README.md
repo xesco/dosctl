@@ -9,7 +9,7 @@ A collection is a list of zip archives, one per game, that dosctl reads games fr
 | Collection | Type key and source | Cache directory |
 |------------|---------------------|-----------------|
 | Set by the environment variables `DOSCTL_COLLECTION` and `DOSCTL_COLLECTION_SOURCE`, which win when either is set | The variables; an unset one takes the built-in's value | `COLLECTION_CACHE_DIR/env` |
-| The built-in `tdc` | `tdc_release_14` and `TDC_RELEASE_14_SOURCE` in `src/dosctl/config.py` | `COLLECTION_CACHE_DIR` |
+| The built-in `tdc` | `tdc14` and `TDC_RELEASE_14_SOURCE` in `src/dosctl/config.py` | `COLLECTION_CACHE_DIR` |
 | A collection added with `dosctl col add` and chosen with `dosctl col use` | Its entry in `collections.json` in the config directory | `COLLECTION_CACHE_DIR/<name>` |
 
 A collection does four things in turn.

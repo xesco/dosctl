@@ -32,7 +32,7 @@ class TestIntegration:
 
                 # Create a mock collection with test data
                 collection = create_collection(
-                    "tdc_release_14",
+                    "tdc14",
                     "https://example.com/source",
                     str(cache_dir)
                 )
@@ -80,7 +80,7 @@ class TestIntegration:
             cache_file.write_text(mock_content)
 
             collection = create_collection(
-                "tdc_release_14",
+                "tdc14",
                 "https://example.com/source",
                 temp_dir
             )
@@ -105,7 +105,7 @@ class TestIntegration:
         """Test cache creation and management."""
         with tempfile.TemporaryDirectory() as temp_dir:
             collection = create_collection(
-                "tdc_release_14",
+                "tdc14",
                 "https://example.com/source",
                 temp_dir
             )
@@ -142,7 +142,7 @@ class TestIntegration:
                  patch.object(game_module, 'INSTALLED_DIR', installed_dir):
 
                 collection = create_collection(
-                    "tdc_release_14",
+                    "tdc14",
                     "https://example.com/source",
                     temp_dir
                 )
@@ -166,7 +166,7 @@ class TestIntegration:
                  patch.object(game_module, 'INSTALLED_DIR', installed_dir):
 
                 collection = create_collection(
-                    "tdc_release_14",
+                    "tdc14",
                     "https://example.com/source",
                     str(cache_dir)
                 )
@@ -198,7 +198,7 @@ class TestIntegration:
             cache_file.write_text(mock_content)
 
             collection = create_collection(
-                "tdc_release_14",
+                "tdc14",
                 "https://example.com/source",
                 temp_dir
             )
@@ -225,7 +225,7 @@ class TestIntegration:
             with patch.object(game_module, 'DOWNLOADS_DIR', downloads_dir):
 
                 collection = create_collection(
-                    "tdc_release_14",
+                    "tdc14",
                     "https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip",
                     temp_dir
                 )

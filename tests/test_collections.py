@@ -290,7 +290,7 @@ class TestCollectionFactory:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             collection = create_collection(
-                "tdc_release_14",
+                "tdc14",
                 "https://example.com/source",
                 temp_dir
             )
@@ -310,5 +310,5 @@ class TestCollectionFactory:
         from dosctl.collections.factory import get_available_collections
 
         available = get_available_collections()
-        assert "tdc_release_14" in available
+        assert "tdc14" in available
         assert len(available) >= 1

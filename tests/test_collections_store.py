@@ -30,7 +30,7 @@ def isolated(tmp_path, monkeypatch):
 class TestListAndActive:
     def test_builtin_only_by_default(self):
         assert list(list_collections()) == ["tdc"]
-        assert list_collections()["tdc"]["type"] == "tdc_release_14"
+        assert list_collections()["tdc"]["type"] == "tdc14"
         assert get_active_name() == "tdc"
 
     def test_add_and_list(self, isolated):
@@ -111,7 +111,7 @@ class TestResolve:
         resolved = resolve_collection()
 
         assert resolved.name == "tdc"
-        assert resolved.type == "tdc_release_14"
+        assert resolved.type == "tdc14"
         assert resolved.cache_dir == isolated / "cache"
         assert cache_dir_for("tdc") == isolated / "cache"
 
@@ -135,7 +135,7 @@ class TestResolve:
     def test_env_source_alone_keeps_builtin_type(self, monkeypatch):
         monkeypatch.setenv("DOSCTL_COLLECTION_SOURCE", "https://example.com/items/x/y")
 
-        assert resolve_collection().type == "tdc_release_14"
+        assert resolve_collection().type == "tdc14"
         assert resolve_collection().source == "https://example.com/items/x/y"
 
     def test_no_env_means_no_override(self):

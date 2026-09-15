@@ -53,7 +53,7 @@ class TestAdd:
 
         assert result.exit_code == 0
         assert store.list_collections()["other"] == {
-            "type": "tdc_release_14", "source": "https://example.com/items/x/y",
+            "type": "tdc14", "source": "https://example.com/items/x/y",
         }
 
     def test_add_explicit_type(self, games_dir):
@@ -117,8 +117,8 @@ class TestList:
 
         lines = result.output.splitlines()
         assert lines[0] == "Collections:"
-        assert lines[1].startswith("  tdc   tdc_release_14  https://")
-        assert lines[2] == f"* mine  local_file      {games_dir.resolve()}"
+        assert lines[1].startswith("  tdc   tdc14       https://")
+        assert lines[2] == f"* mine  local_file  {games_dir.resolve()}"
 
     def test_list_notes_env_override(self, monkeypatch):
         monkeypatch.setenv("DOSCTL_COLLECTION", "local_file")

@@ -53,7 +53,7 @@ Most commands are wrapped with `@ensure_cache`, which automatically creates dire
 - `base.py` — `BaseCollection` ABC defining the collection interface; `CatalogCollection` with the shared in-memory list, ID lookup and safe unzip
 - `archive_org.py` — `ArchiveOrgCollection` base + `TotalDOSCollectionRelease14` concrete class
 - `local_file.py` — `LocalFileCollection`: zip archives in a local directory, rescanned every run, unpacked in place
-- `factory.py` — creates collection instances; keys `tdc_release_14` and `local_file`
+- `factory.py` — creates collection instances; keys `tdc14` and `local_file`
 - The collection in use comes from `lib/collections_store.py`: `DOSCTL_COLLECTION`/`DOSCTL_COLLECTION_SOURCE` if set, else the active entry of `collections.json` (built-in `tdc` by default); each named collection has its own cache dir
 - Game IDs are 8-character SHA1 hash prefixes derived from the archive path
 
