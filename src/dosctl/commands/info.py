@@ -26,8 +26,8 @@ def info(collection, game_id):
     )
 
     # Determine status and relevant paths
-    install_path = INSTALLED_DIR / game_id
-    archive_path = DOWNLOADS_DIR / f"{game['name']}.zip"
+    install_path = collection.installed_dir_for(INSTALLED_DIR) / game_id
+    archive_path = collection.downloads_dir_for(DOWNLOADS_DIR) / f"{game['name']}.zip"
 
     if install_path.exists():
         status = "Installed"

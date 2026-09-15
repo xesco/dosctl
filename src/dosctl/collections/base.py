@@ -21,6 +21,17 @@ class BaseCollection(ABC):
     """
     def __init__(self, source: str):
         self.source = source
+        # Name of the subdirectory of downloads/ and installed/ that holds this
+        # collection's games; None is only used by tests and direct construction.
+        self.scope = None
+
+    def installed_dir_for(self, base: Path) -> Path:
+        """The directory where this collection's installed games live under base."""
+        return base / self.scope if self.scope else base
+
+    def downloads_dir_for(self, base: Path) -> Path:
+        """The directory where this collection's downloaded archives live under base."""
+        return base / self.scope if self.scope else base
 
     @abstractmethod
     def load(self) -> None:

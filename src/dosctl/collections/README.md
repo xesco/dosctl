@@ -1,10 +1,10 @@
 # Collections
 
-A collection is a list of zip archives, one per game, that dosctl reads games from: a web page on the Internet Archive, or a directory on the machine. This package holds the code that reads such a list, looks games up by ID, fetches a game's archive and unpacks it when the game is played. This page is for a developer who wants to understand that code or add a collection. It explains how dosctl chooses and uses a collection, describes each class and the catalog file, and then gives the steps to add a collection.
+A collection is a list of zip archives, one per game, that dosctl reads games from: a web page on the Internet Archive, a directory on the machine, or an S3-compatible bucket. This package holds the code that reads such a list, looks games up by ID, fetches a game's archive and unpacks it when the game is played. This page is for a developer who wants to understand that code or add a collection. It explains how dosctl chooses and uses a collection, describes each class and the catalog file, and then gives the steps to add a collection.
 
 ## How dosctl uses a collection
 
-`ensure_cache` (`src/dosctl/lib/decorators.py`) wraps every command that needs the list of games. The wrapper asks `resolve_collection` (`src/dosctl/lib/collections_store.py`) which collection is in use. It creates the collection with `create_collection` (`factory.py`), calls `ensure_cache_is_present` on the collection, and passes the collection to the command. `resolve_collection` returns a type key (a key of `COLLECTION_REGISTRY` in `factory.py`), a source (the URL of the list, or the directory) and a cache directory. The table gives where each of the three comes from.
+`ensure_cache` (`src/dosctl/lib/decorators.py`) wraps every command that needs the list of games. The wrapper asks `resolve_collection` (`src/dosctl/lib/collections_store.py`) which collection is in use. It creates the collection with `create_collection` (`factory.py`), calls `ensure_cache_is_present` on the collection, and passes the collection to the command. `resolve_collection` returns a type key (a key of `COLLECTION_REGISTRY` in `factory.py`), a source (the URL of the list, or the directory), a cache directory and the collection's name, which the factory stores as the collection's `scope`. The table gives where each of the three comes from.
 
 | Collection | Type key and source | Cache directory |
 |------------|---------------------|-----------------|
@@ -21,19 +21,20 @@ A collection does four things in turn.
 
 ## The classes
 
-Four classes form a tree. `BaseCollection` declares the interface. `CatalogCollection` implements the parts every collection shares: the list of games in memory, the lookup by ID and the unpacking. `ArchiveOrgCollection` reads the list from a page on the Internet Archive and downloads archives. `TotalDOSCollectionRelease14` fills in the one detail that differs between collections on that site. `LocalFileCollection` reads the list from a directory.
+Four classes form a tree. `BaseCollection` declares the interface. `CatalogCollection` implements the parts every collection shares: the list of games in memory, the lookup by ID and the unpacking. `ArchiveOrgCollection` reads the list from a page on the Internet Archive and downloads archives. `TotalDOSCollectionRelease14` fills in the one detail that differs between collections on that site. `LocalFileCollection` reads the list from a directory. `S3Collection` reads the list from an S3-compatible bucket.
 
 ```
 BaseCollection
 └── CatalogCollection
     ├── ArchiveOrgCollection
     │   └── TotalDOSCollectionRelease14
-    └── LocalFileCollection
+    ├── LocalFileCollection
+    └── S3Collection
 ```
 
 ### BaseCollection
 
-`BaseCollection` (`base.py`) is an abstract class. It stores the source in the attribute `source` and declares three abstract methods.
+`BaseCollection` (`base.py`) is an abstract class. It stores the source in the attribute `source` and declares three abstract methods. It also holds the `scope`, the name of the subdirectory of `downloads/` and `installed/` where the collection's games live; `installed_dir_for(base)` and `downloads_dir_for(base)` return the two directories under a base path, the base path itself when the `scope` is `None`. Every collection's `scope` is its name, so the built-in `tdc` installs into `installed/tdc/` too. dosctl does not move installations from the flat layout a previous version used; `install_game` (`src/dosctl/lib/game.py`) downloads and installs into the scope, and a flat-layout directory is ignored.
 
 | Method | What it does |
 |--------|--------------|
@@ -94,7 +95,51 @@ A scan takes every file in the directory and its subdirectories whose extension 
 | `year` | The `year` that `_parse_filename` returns |
 | `full_path` | The archive's path relative to the directory, with `/` between parts |
 
+### LocalFileCollection
+
+`LocalFileCollection` (`local_file.py`) extends `CatalogCollection` for zip archives in a directory on the machine. The source is the directory's path. A leading `~` stands for the home directory. The collection scans the directory on every run and writes no catalog file, so an archive added to or removed from the directory shows up on the next command. The table lists the methods it defines.
+
+| Method | What it does |
+|--------|--------------|
+| `ensure_cache_is_present(force_refresh=False)` | Scans the directory; prints `✅ Found <count> games in '<directory>'.` when `force_refresh` is true; raises `click.ClickException` with `Collection directory not found: '<directory>'` when the directory does not exist |
+| `_populate_games_data()` | Scans the directory into memory |
+| `get_archive_path(game_id)` | Returns the archive's path in the directory, or `None` when the ID is unknown |
+| `download_game(game_id, destination, force=False)` | Returns the archive's path in the directory and copies nothing to `destination`; returns `None` after printing an error when the archive has gone since the scan; raises `FileNotFoundError` when the ID is unknown |
+| `unzip_game(game_id, download_path, install_path)` | Unpacks the archive from the directory into `install_path` and ignores `download_path`; raises `FileNotFoundError` when the ID is unknown or the archive has gone |
+
+A scan takes every file in the directory and its subdirectories whose extension is `.zip` in any case, sorted by path. The table gives each field of a game and where it comes from.
+
+| Field | Comes from |
+|-------|------------|
+| `id` | The first 8 characters of the SHA-1 hash of the archive's path relative to the directory, with `/` between parts |
+| `name` | The `name` that `_parse_filename` returns |
+| `year` | The `year` that `_parse_filename` returns |
+| `full_path` | The archive's path relative to the directory, with `/` between parts |
+
 Because the archive is never copied into the downloads directory, `dosctl info` never reports a game of this collection as downloaded, and `dosctl delete` never removes a file from the directory.
+
+### S3Collection
+
+`S3Collection` (`s3.py`) extends `CatalogCollection` for zip archives in an S3-compatible bucket, reached over anonymous HTTPS. It works with AWS S3 and any S3-compatible store that allows public reads (MinIO, Backblaze B2, DigitalOcean Spaces, Wasabi). The source URI names the bucket and an optional key prefix:
+
+| Source URI | Endpoint and addressing |
+|------------|-------------------------|
+| `s3://bucket[/prefix]` | AWS, virtual-host style: `https://bucket.s3.amazonaws.com` |
+| `s3+https://host[:port]/bucket[/prefix]` | That host, path style: `https://host[:port]/bucket` |
+| `s3+http://host[:port]/bucket[/prefix]` | The same over plain HTTP |
+
+The constructor splits the URI with `_parse_source`, which raises `ValueError` for a URI it cannot read. The bucket name is the collection name. The table lists the methods it defines.
+
+| Method | What it does |
+|--------|--------------|
+| `ensure_cache_is_present(force_refresh=False)` | Lists the bucket and writes `games.txt` when the file is missing or `force_refresh` is true; prints `Downloading game list from <source>...` and `✅ Game list refreshed successfully.` |
+| `_populate_games_data()` | Reads `games.txt` into memory and skips blank lines and lines without exactly four fields |
+| `get_download_url(game_id)` | Returns the object URL for the game, or `None` when the ID is unknown |
+| `download_game(game_id, destination, force=False)` | Downloads the object to `<destination>/<name>.zip` with a progress bar and returns that path; returns the path without downloading when the file exists and `force` is false; returns `None` after printing an error when the download fails or stops short of the size the server announced |
+
+`_list_zip_keys` sends the S3 API's list operation (ListObjectsV2) to `GET <base URL>/?list-type=2` with the prefix when the source has one, and follows `IsTruncated`/`NextContinuationToken` pages. Keys that do not end in `.zip` (in any case) are dropped and the rest is sorted. A failed request or malformed XML raises `click.ClickException` with `Could not list games from <source>: ...`.
+
+The listing is anonymous, so the bucket must allow public reads. A private bucket fails the list request with the error above.
 
 ## The catalog file
 
@@ -132,11 +177,11 @@ Adding a collection from an Internet Archive page that lists zip archives takes 
 
 3. Select the collection with `dosctl col add <name> --type <key> <url>` and `dosctl col use <name>`, or with the environment variables (both under [How dosctl uses a collection](#how-dosctl-uses-a-collection)). To make it the built-in instead, change `BUILTIN` in `src/dosctl/lib/collections_store.py` and `TDC_RELEASE_14_SOURCE` in `src/dosctl/config.py`.
 
-4. Run the tests of this package with `uv run pytest tests/test_collections.py tests/test_local_file.py`.
+4. Run the tests of this package with `uv run pytest tests/test_collections.py tests/test_local_file.py tests/test_s3_collection.py`.
 
 ## Adding a collection of another kind
 
-A collection that is neither an Internet Archive page nor a directory extends `CatalogCollection` directly. The subclass defines `ensure_cache_is_present` and `_populate_games_data` to build the list of games, `download_game` to fetch an archive, and `unzip_game` when the archive is not at `<download_path>/<name>.zip`. `LocalFileCollection` is the model. Then steps 2 to 4 of [Adding a collection on the Internet Archive](#adding-a-collection-on-the-internet-archive) apply.
+A collection that is neither an Internet Archive page nor a directory extends `CatalogCollection` directly. The subclass defines `ensure_cache_is_present` and `_populate_games_data` to build the list of games, `download_game` to fetch an archive, and `unzip_game` when the archive is not at `<download_path>/<name>.zip`. `LocalFileCollection` and `S3Collection` are the models. Then steps 2 to 4 of [Adding a collection on the Internet Archive](#adding-a-collection-on-the-internet-archive) apply.
 
 ## Files
 
@@ -145,6 +190,7 @@ A collection that is neither an Internet Archive page nor a directory extends `C
 | `base.py` | `BaseCollection` and `CatalogCollection` |
 | `archive_org.py` | `ArchiveOrgCollection` and `TotalDOSCollectionRelease14` |
 | `local_file.py` | `LocalFileCollection` |
+| `s3.py` | `S3Collection` |
 | `factory.py` | `COLLECTION_REGISTRY`, `create_collection` and `get_available_collections` |
 | `__init__.py` | Nothing; it marks the package |
 

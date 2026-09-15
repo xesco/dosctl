@@ -13,7 +13,9 @@ def install_game(collection, game_id):
     if not game:
         raise FileNotFoundError(f"Game with ID '{game_id}' not found.")
 
-    game_install_path = INSTALLED_DIR / game_id
+    # Each collection installs into its own subdirectory, so that two
+    # collections cannot collide on the same game ID.
+    game_install_path = collection.installed_dir_for(INSTALLED_DIR) / game_id
 
     # If the game is already installed, we're done.
     if game_install_path.exists():
@@ -21,13 +23,14 @@ def install_game(collection, game_id):
         return game, game_install_path
 
     # Download the game if it's not already cached
-    download_path = collection.download_game(game_id, str(DOWNLOADS_DIR))
+    downloads_dir = collection.downloads_dir_for(DOWNLOADS_DIR)
+    download_path = collection.download_game(game_id, str(downloads_dir))
     if not download_path:
         # The download method will print an error, so we just exit.
         return None, None
 
     # Unzip the game to its final installation directory
-    collection.unzip_game(game_id, DOWNLOADS_DIR, game_install_path)
+    collection.unzip_game(game_id, downloads_dir, game_install_path)
 
     click.echo(f"✅ Successfully installed '{game['name']}'")
     return game, game_install_path

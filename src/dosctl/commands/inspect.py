@@ -14,7 +14,7 @@ def inspect(collection, game_id, executables):
     Inspects the installed files for a given game.
     """
     game_id = resolve_game_id(game_id)
-    game_install_path = INSTALLED_DIR / game_id
+    game_install_path = collection.installed_dir_for(INSTALLED_DIR) / game_id
 
     if not game_install_path.exists() or not game_install_path.is_dir():
         click.echo(f"Error: Game with ID '{game_id}' is not installed.", err=True)

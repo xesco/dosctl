@@ -15,7 +15,8 @@ def list_games(collection, sort_by, installed):
     games = collection.get_games()
 
     if installed:
-        installed_ids = {p.name for p in INSTALLED_DIR.iterdir() if p.is_dir()} if INSTALLED_DIR.exists() else set()
+        installed_base = collection.installed_dir_for(INSTALLED_DIR)
+        installed_ids = {p.name for p in installed_base.iterdir() if p.is_dir()} if installed_base.exists() else set()
         games = [g for g in games if g['id'] in installed_ids]
 
     if not games:

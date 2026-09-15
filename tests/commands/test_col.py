@@ -105,6 +105,7 @@ class TestUse:
 
         create.assert_called_once_with(
             "local_file", source=str(games_dir.resolve()), cache_dir=store.COLLECTION_CACHE_DIR / "mine",
+            scope="mine",
         )
 
 
