@@ -41,7 +41,6 @@ Every game in the catalog has an ID of 8 characters. `list` and `search` print t
     Available Games:
       [07e881d4] (1988) $100,000 Pyramid, The (1988)(Box Office) [Trivia]
       [0b82bc4c] (1988) $100,000 Pyramid, The v1.3 (1988)(Box Office) [Trivia][!]
-      [31b3bcb9] (1991) 'Nam 1965-1975 (1991)(Domark Software Ltd.) [Documentation]
       ...
     ```
 
@@ -57,13 +56,12 @@ Every game in the catalog has an ID of 8 characters. `list` and `search` print t
       ...
     ```
 
-3. Play a game by its ID. `play` downloads the game's zip archive, unpacks it into an install directory (the game is then *installed*) and starts DOSBox. When the install directory holds one executable (a file whose name ends in `.exe`, `.com` or `.bat`), dosctl runs that file. When the directory holds several, dosctl lists them and asks you to choose one. dosctl saves the choice as the game's default command, so the next `dosctl play` of that game runs the command without asking.
+3. Play a game by its ID. `play` downloads the game's zip archive, unpacks it into an install directory (the game is then *installed*) and starts DOSBox. When the install directory holds one executable (a file whose name ends in `.exe`, `.com` or `.bat`), dosctl runs that file. When the directory holds several, dosctl lists them and asks you to choose one, saves the choice as the game's default command, and runs it without asking from then on.
 
     ```bash
     dosctl play 2c802b5e
     ```
     ```
-    No default executable set for game '2c802b5e'. Searching...
     Please choose one of the following to run:
       1: DOTT.EXE
       2: TENTACLE.EXE
@@ -125,7 +123,7 @@ Installs the game when it is not installed, downloading it first when it comes f
 | The install directory holds one executable | That executable |
 | The install directory holds several executables | The executable you choose from the menu |
 
-dosctl saves the command that runs as the game's default, so a command given as COMMAND_PARTS becomes the default for later runs. Before DOSBox starts, dosctl checks that the first word of the command names a file in the install directory. When it does not, dosctl prints an error, removes the saved default and stops. Every `/` in the command becomes `\` before DOSBox runs it. When the first word is a path with a directory, DOSBox changes into that directory before running the file.
+dosctl saves the command that runs as the game's default, so a command given as COMMAND_PARTS becomes the default for later runs. Before DOSBox starts, dosctl checks that the first word of the command names a file in the install directory; when it does not, dosctl prints an error, removes the saved default and stops. Every `/` in the command becomes `\`, and when the first word is a path with a directory, DOSBox changes into that directory before running the file.
 
 | Flag | What it does |
 |------|--------------|
@@ -138,21 +136,11 @@ dosctl play 2c802b5e                       # Run the saved default command
 dosctl play 2c802b5e --configure           # Choose the executable again
 dosctl play 2c802b5e DOTT.EXE              # Run DOTT.EXE and make it the default
 dosctl play 2c802b5e -- TENTACLE.EXE -x    # Pass arguments that start with a dash
-```
-
-The `--` after the ID stops dosctl from reading the arguments that follow as its own flags. Some games in the catalog are floppy disk images with an installer that copies the game from drive A: to drive C:. Run the installer with `-a`, then run the installed game by the path the installer created, which `inspect` shows:
-
-```bash
-dosctl play d44bf6dc INSTALL.EXE -a        # Run the installer with A: mounted
-dosctl inspect -e d44bf6dc                 # Find the executable the installer created
-```
-
-To browse a game's files inside DOSBox, open DOSBox without running anything:
-
-```bash
+dosctl play d44bf6dc INSTALL.EXE -a        # Run a floppy installer with A: mounted
 dosctl play 2c802b5e --no-exec             # Open DOSBox at the C:\> prompt
-dosctl play 2c802b5e --no-exec -a          # Open DOSBox at the A:\> prompt
 ```
+
+The `--` after the ID stops dosctl from reading the arguments that follow as its own flags. Some games in the catalog are floppy disk images with an installer that copies the game from drive A: to drive C.: run the installer with `-a`, then run the installed game by the path the installer created, which `inspect -e` shows.
 
 When a file named `dosbox.conf` exists in the install directory, `play`, `net host` and `net join` pass it to DOSBox with `-conf` to set cycles, memory, sound and other DOSBox options for that game alone.
 
@@ -212,7 +200,6 @@ Downloaded Archive: /Users/xesco/.local/share/dosctl/downloads/tdc/Star Control 
 Are you sure you want to continue? [y/N]: y
 ✅ Successfully deleted installation directory.
 ✅ Successfully deleted downloaded archive.
-✅ Removed saved launch command.
 ```
 
 ### `dosctl alias`
@@ -228,12 +215,9 @@ Manages aliases. An alias is a name you give a game ID. Every command that takes
 ```bash
 dosctl alias set tentacle 2c802b5e
 dosctl play tentacle                       # Same as: dosctl play 2c802b5e
-dosctl alias list
 ```
 ```
 Alias 'tentacle' → '2c802b5e' (Maniac Mansion- Day of the Tentacle v1.5 (1993)(LucasArts Entertainment Company LLC) [Adventure]) saved.
-Defined aliases:
-  tentacle → 2c802b5e (Maniac Mansion- Day of the Tentacle v1.5 (1993)(LucasArts Entertainment Company LLC) [Adventure])
 ```
 
 ### `dosctl col`
@@ -257,19 +241,14 @@ Collection 'mine' (local_file) added: /Users/xesco/src/dosctl/src/dosgames
 Use 'dosctl col use mine' to switch to it.
 Now using collection 'mine'.
 Collections:
-  tdc   tdc_release_14  https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip
 * mine  local_file      /Users/xesco/src/dosctl/src/dosgames
 ```
 
 ### `dosctl net host GAME_ID|ALIAS [COMMAND_PARTS]...`
 
-Hosts a multiplayer game. IPX is the network protocol that DOS games with a network option use. DOSBox emulates IPX over UDP. One player's DOSBox runs an IPX server and the other players' DOSBox instances connect to that server. `net host` installs the game and chooses the command as `play` does, starts DOSBox with an IPX server on a UDP port, and runs the command. DOSBox stays open after the game exits, so you can start the game again without connecting again. Choose IPX in the game's own multiplayer menu once it runs.
+Hosts a multiplayer game. IPX is the network protocol that DOS games with a network option use, and DOSBox emulates IPX over UDP: one player's DOSBox runs an IPX server and the other players' DOSBox instances connect to that server. `net host` installs the game and chooses the command as `play` does, starts DOSBox with an IPX server on a UDP port, and runs the command; DOSBox stays open after the game exits, so you can start the game again without connecting again. Choose IPX in the game's own multiplayer menu once it runs.
 
-By default `net host` serves your local network, so it prints your local IP address and the `net join` command for other players to run. With `--internet`, it prepares play over the internet in three steps.
-
-1. It asks your router by UPnP (a router feature that lets a program on your network ask for a port to be forwarded to it) to forward the UDP port to your machine. When UPnP fails, `net host` prints a message and continues. When the router's address is a carrier-grade NAT address (common with Starlink), `net host` says so, because port forwarding cannot work there and another player has to host.
-2. It finds your public IP address, from the router when UPnP succeeded and otherwise from `api.ipify.org` or `checkip.amazonaws.com`. When neither answers, `net host` says so and hosts without a discovery code.
-3. It prints a discovery code. The code encodes the public IP address and the port in the form `WORD-NNNNN`. When the port is not 19900, the code ends with a `-Pxxxx` suffix that gives the port.
+By default `net host` serves your local network and prints your local IP address and the `net join` command for other players. With `--internet`, it prepares play over the internet: it asks your router by UPnP to forward the UDP port to your machine (UPnP failing prints a message and continues; a carrier-grade NAT address, common with Starlink, cannot work and another player has to host), finds your public IP address (from the router, or from `api.ipify.org` and `checkip.amazonaws.com`), and prints a discovery code of the form `WORD-NNNNN` that encodes the public IP address and the port, with a `-Pxxxx` suffix when the port is not 19900.
 
 | Flag | What it does |
 |------|--------------|
@@ -282,25 +261,8 @@ By default `net host` serves your local network, so it prints your local IP addr
 
 ```bash
 dosctl net host 2c802b5e                   # Host on your local network
-```
-```
-Hosting IPX server on port 19900.
-Your local IP appears to be: 192.168.2.105
-
-Other players on your network can join with:
-  dosctl net join 2c802b5e 192.168.2.105
-
-Starting 'TENTACLE.EXE' with DOSBox (IPX networking)...
-```
-
-```bash
 dosctl net host 2c802b5e --internet        # Host over the internet
-```
-
-When you have forwarded the port on your router yourself, skip UPnP and give your public IP address:
-
-```bash
-dosctl net host 2c802b5e --internet --no-upnp --public-ip 203.0.113.5
+dosctl net host 2c802b5e --internet --no-upnp --public-ip 203.0.113.5   # Skip UPnP
 ```
 ```
 Setting up internet play (UPnP skipped)...
@@ -314,6 +276,8 @@ Share this code with other players. They can join with:
 
 Starting 'TENTACLE.EXE' with DOSBox (IPX networking)...
 ```
+
+When you have forwarded the port on your router yourself, skip UPnP and give your public IP address with `--no-upnp --public-ip`.
 
 ### `dosctl net join GAME_ID|ALIAS HOST_IP [COMMAND_PARTS]...`
 
@@ -337,7 +301,7 @@ Starting 'TENTACLE.EXE' with DOSBox (IPX networking)...
 
 ### `dosctl refresh --force`
 
-Builds the catalog again from its source. Without `--force`, `refresh` prints a reminder to add the flag and changes nothing.
+Builds the catalog again from its source. Without `--force`, `refresh` prints a reminder to add the flag and changes nothing. When the catalog comes from a directory, the download lines are replaced by a count of the archives found.
 
 ```bash
 dosctl refresh --force
@@ -347,12 +311,6 @@ Ensuring application directories exist...
 Rebuilding the catalog...
 Downloading game list from https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip...
 ✅ Game list refreshed successfully.
-```
-
-When the catalog comes from a directory (see [Where the games come from](#where-the-games-come-from)), the last two lines are replaced by a count of the archives found:
-
-```
-✅ Found 5 games in '/Users/xesco/src/dosctl/src/dosgames'.
 ```
 
 ### `dosctl version`
@@ -383,7 +341,7 @@ The config directory holds four files, each created when first needed:
   aliases.json       # Aliases, each with its game ID and game name
   collections.json   # The collections added with `col add`, and the name of the one in use
   play_config.json   # The saved default command of each game
-  ipx.conf           # A DOSBox config that turns IPX on, written for `net host` and `net join`
+  ipx.conf           # A DOSBox config that turns IPX on, written for `net host` and `net join'
 ```
 
 The data directory holds the catalogs, the downloaded archives and the installed games. A directory collection has no catalog file, because dosctl reads the directory itself. Every collection installs its games into its own subdirectory of `installed/` and `downloads/`, named after the collection, so two collections cannot collide on the same game ID:
@@ -391,42 +349,25 @@ The data directory holds the catalogs, the downloaded archives and the installed
 ```
 <data-dir>/
   collections/
-    games.txt        # The catalog of `tdc`: one line per game with its ID, name, year and archive path
-    <name>/
-      games.txt      # The catalog of an added Internet Archive or S3 collection
-  downloads/
-    <collection>/    # A collection's downloads: tdc, or the name of an added collection
-      <game name>.zip
-  installed/
-    <collection>/
-      <game-id>/     # A game's install directory, the unpacked archive
-        dosbox.conf  # Optional; DOSBox options for this game alone
+    <collection>/games.txt   # The catalog; collections/ holds tdc's directly
+  downloads/<collection>/    # A collection's downloads: tdc, or an added collection
+  installed/<collection>/<game-id>/   # The unpacked archive; dosbox.conf is optional
 ```
 
 ## Where the games come from
 
-By default the catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive, the built-in collection `tdc`. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. To play archives of your own, add the directory that holds them as a collection and switch to it (see [`dosctl col`](#dosctl-col)). Archives can also come from an S3-compatible bucket (AWS S3, MinIO, Backblaze B2, DigitalOcean Spaces, Wasabi) that allows public reads:
+By default the catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive, the built-in collection `tdc`. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. To play archives of your own, add the place that holds them as a collection and switch to it (see [`dosctl col`](#dosctl-col)): a directory of zip archives, or an S3-compatible bucket (AWS S3, MinIO, Backblaze B2, DigitalOcean Spaces, Wasabi) that allows public reads.
 
 ```bash
-dosctl col add aws-mirror s3://my-bucket/dosgames
-dosctl col add minio s3+https://minio.example.com:9000/games
-```
-
-```bash
-dosctl col add -t local_file mine ~/src/dosctl/src/dosgames
+dosctl col add mine ~/src/dosctl/src/dosgames                      # A directory
+dosctl col add aws-mirror s3://my-bucket/dosgames                  # AWS S3
+dosctl col add minio s3+https://minio.example.com:9000/games       # Any S3-compatible endpoint
 dosctl col use mine
-dosctl list
 ```
 ```
 Collection 'mine' (local_file) added: /Users/xesco/src/dosctl/src/dosgames
 Use 'dosctl col use mine' to switch to it.
 Now using collection 'mine'.
-Available Games:
-  [d29c4f41] (1992) Commander Keen in Keen Dreams v1.13 EGA [SW] (1992)(Softdisk Publishing) [Action]
-  [e32da5d5] (1993) DOOM (Installer) [SW] (1993)(id Software, Inc.) [Action]
-  [6e98fe0d] (1993) Duke Nukem II (Installer) [SW] (1993)(Apogee Software, Ltd.) [Action]
-  [0ed25d7b] (1992) Jill of The Jungle [SW] (1992)(Epic MegaGames, Inc) [Action]
-  [acc67a02] (1992) Wolfenstein 3D (Installer) [SW] (1992)(Apogee Software, Ltd.) [Action]
 ```
 
 dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension. The game's year is the first four digits in parentheses in the file name. The game's ID is the first 8 characters of the SHA-1 hash of the file's path relative to the directory. dosctl reads the directory again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`. `info` never reports a game from the directory as downloaded. `delete` never removes a file from the directory.
