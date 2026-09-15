@@ -8,6 +8,7 @@ from unittest.mock import patch
 import click
 import pytest
 
+import dosctl.collections.base as base_module
 from dosctl.collections.factory import create_collection, get_available_collections
 from dosctl.collections.local_file import LocalFileCollection
 from dosctl.lib import game as game_module
@@ -188,3 +189,60 @@ class TestLocalFileInstall:
             assert install_path == installed_dir / game_id
             assert (install_path / "GAME.EXE").exists()
             assert list(downloads_dir.iterdir()) == []
+
+
+def _implode():
+    """Make every member of the next opened archive look imploded (method 6)."""
+    real_infolist = zipfile.ZipFile.infolist
+
+    def fake_infolist(self):
+        members = real_infolist(self)
+        for m in members:
+            m.compress_type = 6
+        return members
+
+    return patch.object(zipfile.ZipFile, "infolist", fake_infolist)
+
+
+class TestUnsupportedCompression:
+    def test_falls_back_to_unzip_command(self, games_dir):
+        _make_zip(games_dir / "old.zip", {"GAME.EXE": "imploded", "DATA/L1.DAT": "x"})
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            collection = LocalFileCollection(str(games_dir), temp_dir)
+            install_path = Path(temp_dir) / "installed" / "old"
+
+            with _implode(), \
+                 patch.object(base_module.subprocess, "run", wraps=base_module.subprocess.run) as run:
+                collection.unzip_game(_expected_id("old.zip"), Path(temp_dir), install_path)
+
+            assert run.call_args[0][0][0].endswith("unzip")
+            assert (install_path / "GAME.EXE").read_text() == "imploded"
+            assert (install_path / "DATA" / "L1.DAT").read_text() == "x"
+
+    def test_unzip_command_missing(self, games_dir):
+        _make_zip(games_dir / "old.zip")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            collection = LocalFileCollection(str(games_dir), temp_dir)
+            install_path = Path(temp_dir) / "installed" / "old"
+
+            with _implode(), patch.object(base_module.shutil, "which", return_value=None), \
+                 pytest.raises(RuntimeError, match="'unzip' command is not installed"):
+                collection.unzip_game(_expected_id("old.zip"), Path(temp_dir), install_path)
+
+            assert not install_path.exists()
+            assert list((Path(temp_dir) / "installed").iterdir()) == []
+
+    def test_unsafe_paths_refused_before_unzip_runs(self, games_dir):
+        _make_zip(games_dir / "evil.zip", {"../escape.txt": "bad"})
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            collection = LocalFileCollection(str(games_dir), temp_dir)
+            install_path = Path(temp_dir) / "installed" / "evil"
+
+            with _implode(), patch.object(base_module.subprocess, "run") as run, \
+                 pytest.raises(ValueError, match="unsafe path"):
+                collection.unzip_game(_expected_id("evil.zip"), Path(temp_dir), install_path)
+
+            run.assert_not_called()

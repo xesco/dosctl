@@ -1,12 +1,8 @@
 import click
 
 from dosctl.collections.factory import create_collection
-from dosctl.config import (
-    COLLECTION_CACHE_DIR,
-    DEFAULT_COLLECTION_SOURCE,
-    DEFAULT_COLLECTION_TYPE,
-    ensure_dirs_exist,
-)
+from dosctl.config import ensure_dirs_exist
+from dosctl.lib.collections_store import resolve_collection
 
 
 @click.command()
@@ -23,10 +19,11 @@ def refresh(force):
     click.echo("Ensuring application directories exist...")
     ensure_dirs_exist()
 
+    resolved = resolve_collection()
     collection = create_collection(
-        DEFAULT_COLLECTION_TYPE,
-        source=DEFAULT_COLLECTION_SOURCE,
-        cache_dir=COLLECTION_CACHE_DIR,
+        resolved.type,
+        source=resolved.source,
+        cache_dir=resolved.cache_dir,
     )
 
     click.echo("Rebuilding the catalog...")

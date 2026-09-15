@@ -4,12 +4,13 @@ A collection is a list of zip archives, one per game, that dosctl reads games fr
 
 ## How dosctl uses a collection
 
-`ensure_cache` (`src/dosctl/lib/decorators.py`) wraps every command that needs the list of games. The wrapper creates the collection with `create_collection` (`factory.py`), calls `ensure_cache_is_present` on it and passes it to the command. The type key, the source and the cache directory come from `DEFAULT_COLLECTION_TYPE`, `DEFAULT_COLLECTION_SOURCE` and `COLLECTION_CACHE_DIR` in `src/dosctl/config.py`. The table gives the two environment variables that set the type key and the source, and their defaults.
+`ensure_cache` (`src/dosctl/lib/decorators.py`) wraps every command that needs the list of games. The wrapper asks `resolve_collection` (`src/dosctl/lib/collections_store.py`) which collection is in use. It creates the collection with `create_collection` (`factory.py`), calls `ensure_cache_is_present` on the collection, and passes the collection to the command. `resolve_collection` returns a type key (a key of `COLLECTION_REGISTRY` in `factory.py`), a source (the URL of the list, or the directory) and a cache directory. The table gives where each of the three comes from.
 
-| Variable | Sets | Default |
-|----------|------|---------|
-| `DOSCTL_COLLECTION` | The type key, one of the keys of `COLLECTION_REGISTRY` in `factory.py` | `tdc_release_14` |
-| `DOSCTL_COLLECTION_SOURCE` | The source: the URL of the list for `tdc_release_14`, the directory for `local_file` | The URL of Total DOS Collection Release 14 |
+| Collection | Type key and source | Cache directory |
+|------------|---------------------|-----------------|
+| Set by the environment variables `DOSCTL_COLLECTION` and `DOSCTL_COLLECTION_SOURCE`, which win when either is set | The variables; an unset one takes the built-in's value | `COLLECTION_CACHE_DIR/env` |
+| The built-in `tdc` | `tdc_release_14` and `TDC_RELEASE_14_SOURCE` in `src/dosctl/config.py` | `COLLECTION_CACHE_DIR` |
+| A collection added with `dosctl col add` and chosen with `dosctl col use` | Its entry in `collections.json` in the config directory | `COLLECTION_CACHE_DIR/<name>` |
 
 A collection does four things in turn.
 
@@ -42,7 +43,7 @@ BaseCollection
 
 ### CatalogCollection
 
-`CatalogCollection` (`base.py`) implements `BaseCollection` for a collection whose games are zip archives and whose list of games is held in memory. Its constructor takes `source`, `cache_dir` and `collection_name`. It creates the cache directory when it does not exist. Two methods are abstract: `ensure_cache_is_present(force_refresh=False)` makes the list available, and `_populate_games_data()` fills the list in memory. The table lists the methods every subclass gets.
+`CatalogCollection` (`base.py`) implements `BaseCollection` for a collection whose games are zip archives and whose list of games is held in memory. Its constructor takes `source`, `cache_dir` and `collection_name`. It creates the cache directory when it does not exist. Two methods are abstract. `ensure_cache_is_present(force_refresh=False)` makes the list available, and `_populate_games_data()` fills the list in memory. The table lists the methods every subclass gets.
 
 | Method | What it does |
 |--------|--------------|
@@ -53,7 +54,7 @@ BaseCollection
 
 `_parse_filename(filename)` takes an archive's file name and returns a dict with `name` (the file name without its `.zip` extension, in any case) and `year` (the first four digits in parentheses, or `None`). A subclass overrides it when it needs to parse the file name differently.
 
-`unzip_game` refuses an archive whose member paths are absolute, start with a drive letter or contain `..`, so an archive cannot write outside the install directory. It unpacks into a temporary directory next to `install_path` and renames that directory into place when every member has been written, so a failed unpack leaves no half-filled install directory. The check and the temporary directory are in `_unpack_archive(zip_filepath, install_path)`, which a subclass calls to unpack an archive from another place.
+`unzip_game` refuses an archive whose member paths are absolute, start with a drive letter or contain `..`, so an archive cannot write outside the install directory. It unpacks into a temporary directory next to `install_path` and renames that directory into place when every member has been written, so a failed unpack leaves no half-filled install directory. When a member uses a compression method that Python's `zipfile` cannot read (PKZIP Implode, common in archives from the early 1990s), it runs the `unzip` command on the archive instead, after the same path check, and raises `RuntimeError` when `unzip` is not installed. The check, the temporary directory and the fallback are in `_unpack_archive(zip_filepath, install_path)`, which a subclass calls to unpack an archive from another place.
 
 ### ArchiveOrgCollection
 
@@ -129,7 +130,7 @@ Adding a collection from an Internet Archive page that lists zip archives takes 
 
 2. Register the class under a new key in `COLLECTION_REGISTRY` in `factory.py`. `create_collection` raises `ValueError` for a key that is not there, and `get_available_collections` returns the keys.
 
-3. Select the collection by setting `DOSCTL_COLLECTION` to the new key and `DOSCTL_COLLECTION_SOURCE` to the page's URL (see [How dosctl uses a collection](#how-dosctl-uses-a-collection)), or make it the default by changing `DEFAULT_COLLECTION_TYPE` and `TDC_RELEASE_14_SOURCE` in `src/dosctl/config.py`.
+3. Select the collection with `dosctl col add <name> --type <key> <url>` and `dosctl col use <name>`, or with the environment variables (both under [How dosctl uses a collection](#how-dosctl-uses-a-collection)). To make it the built-in instead, change `BUILTIN` in `src/dosctl/lib/collections_store.py` and `TDC_RELEASE_14_SOURCE` in `src/dosctl/config.py`.
 
 4. Run the tests of this package with `uv run pytest tests/test_collections.py tests/test_local_file.py`.
 
@@ -147,4 +148,4 @@ A collection that is neither an Internet Archive page nor a directory extends `C
 | `factory.py` | `COLLECTION_REGISTRY`, `create_collection` and `get_available_collections` |
 | `__init__.py` | Nothing; it marks the package |
 
-The user-facing side of the same flow (the `list`, `search`, `play` and `refresh` commands, how to point dosctl at a directory, and where the catalog and the games are stored) is in the main [README](../../../README.md).
+The user-facing side of the same flow (the `list`, `search`, `play`, `refresh` and `col` commands, and where the catalogs and the games are stored) is in the main [README](../../../README.md).

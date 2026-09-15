@@ -36,8 +36,8 @@ uv run ruff check --fix .
 ## Architecture
 
 ### CLI Layer (Click framework)
-- **Entry point:** `src/dosctl/main.py` — defines the `cli` Click group with subcommands: list, search, play, inspect, delete, refresh, net, alias, info, version
-- **Commands:** `src/dosctl/commands/` — each file is one subcommand (net.py and alias.py are Click subgroups)
+- **Entry point:** `src/dosctl/main.py` — defines the `cli` Click group with subcommands: list, search, play, inspect, delete, refresh, net, alias, col, info, version
+- **Commands:** `src/dosctl/commands/` — each file is one subcommand (net.py, alias.py and col.py are Click subgroups)
 
 ### Net Command (`src/dosctl/commands/net.py`)
 - Click subgroup with two subcommands: `host` and `join`
@@ -54,7 +54,7 @@ Most commands are wrapped with `@ensure_cache`, which automatically creates dire
 - `archive_org.py` — `ArchiveOrgCollection` base + `TotalDOSCollectionRelease14` concrete class
 - `local_file.py` — `LocalFileCollection`: zip archives in a local directory, rescanned every run, unpacked in place
 - `factory.py` — creates collection instances; keys `tdc_release_14` and `local_file`
-- The collection is chosen by `DOSCTL_COLLECTION` and `DOSCTL_COLLECTION_SOURCE` (see `config.py`)
+- The collection in use comes from `lib/collections_store.py`: `DOSCTL_COLLECTION`/`DOSCTL_COLLECTION_SOURCE` if set, else the active entry of `collections.json` (built-in `tdc` by default); each named collection has its own cache dir
 - Game IDs are 8-character SHA1 hash prefixes derived from the archive path
 
 ### Platform Abstraction (`src/dosctl/lib/platform.py`)
@@ -90,14 +90,20 @@ Most commands are wrapped with `@ensure_cache`, which automatically creates dire
 - `remove ALIAS_NAME` — deletes an alias
 - `list` — shows all aliases with their game IDs and names
 
+### Col Command (`src/dosctl/commands/col.py`)
+- Click subgroup with four subcommands: `add`, `use`, `list`, `remove`
+- `add NAME SOURCE [--type]` — type defaults to `local_file` unless SOURCE is an http(s) URL; a directory must exist and is stored resolved
+- `use NAME` — sets the active collection; `list` marks it with `*` and notes an env override; `remove` deletes the entry and its cache dir, refuses `tdc`, and falls back to `tdc` when the active one is removed
+
 ### Info Command (`src/dosctl/commands/info.py`)
 - `dosctl info GAME_ID|ALIAS` — shows game metadata (name, ID, year, alias if set, status)
 - Status: "Not downloaded", "Downloaded", or "Installed"; shows archive/install path and saved default command
 
 ### Other Key Modules
-- `config.py` — platform-aware directory paths (config, data, collections, downloads, installed); also defines `IPX_CONF_PATH`, `DEFAULT_COLLECTION_TYPE` and `DEFAULT_COLLECTION_SOURCE`
+- `config.py` — platform-aware directory paths (config, data, collections, downloads, installed); also defines `IPX_CONF_PATH` and `TDC_RELEASE_14_SOURCE`
 - `lib/game.py` — game download, extraction, and installation
 - `lib/aliases.py` — alias storage in `aliases.json`; `set_alias()`, `remove_alias()`, `remove_aliases_for_game_id()`, `list_aliases()`, `resolve_game_id()` (resolves alias or passes through raw game ID)
+- `lib/collections_store.py` — named collections in `collections.json`; `add_collection()`, `set_active()`, `remove_collection()`, `list_collections()`, `resolve_collection()`
 - `lib/config_store.py` — persists chosen executable/command per game in `play_config.json` (migrated from old `run_config.json`)
 - `lib/executables.py` — finds .exe/.com/.bat files in game directories; shared executable selection/prompting logic used by both play and net commands
 - `lib/display.py` — terminal display formatting for game listings

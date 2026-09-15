@@ -1,5 +1,6 @@
 import re
 import shutil
+import subprocess
 import tempfile
 import zipfile
 from abc import ABC, abstractmethod
@@ -7,6 +8,11 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import click
+
+# Compression methods zipfile can read: stored, deflate, bzip2 and lzma.
+_PYTHON_ZIP_METHODS = {
+    zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED, zipfile.ZIP_BZIP2, zipfile.ZIP_LZMA,
+}
 
 
 class BaseCollection(ABC):
@@ -123,23 +129,50 @@ class CatalogCollection(BaseCollection):
         )
 
         try:
-            for member in zip_ref.infolist():
-                target_path = self._validated_extract_path(
-                    member.filename, install_root=temp_install_path
-                )
+            members = zip_ref.infolist()
+            targets = [
+                self._validated_extract_path(m.filename, install_root=temp_install_path)
+                for m in members
+            ]
 
-                if member.is_dir():
-                    target_path.mkdir(parents=True, exist_ok=True)
-                    continue
-
-                target_path.parent.mkdir(parents=True, exist_ok=True)
-                with zip_ref.open(member, "r") as source, open(target_path, "wb") as dest:
-                    shutil.copyfileobj(source, dest)
+            if self._needs_external_unzip(members):
+                self._extract_with_unzip(Path(zip_ref.filename), temp_install_path)
+            else:
+                self._extract_members(zip_ref, members, targets)
 
             temp_install_path.rename(install_path)
         except Exception:
             shutil.rmtree(temp_install_path, ignore_errors=True)
             raise
+
+    def _extract_members(self, zip_ref: zipfile.ZipFile, members, targets) -> None:
+        for member, target_path in zip(members, targets):
+            if member.is_dir():
+                target_path.mkdir(parents=True, exist_ok=True)
+                continue
+
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            with zip_ref.open(member, "r") as source, open(target_path, "wb") as dest:
+                shutil.copyfileobj(source, dest)
+
+    def _needs_external_unzip(self, members) -> bool:
+        """True when a member uses a method zipfile cannot read, e.g. PKZIP 1.x Implode."""
+        return any(m.compress_type not in _PYTHON_ZIP_METHODS for m in members)
+
+    def _extract_with_unzip(self, zip_filepath: Path, target_dir: Path) -> None:
+        unzip = shutil.which("unzip")
+        if not unzip:
+            raise RuntimeError(
+                f"'{zip_filepath.name}' uses a compression method Python cannot read "
+                "and the 'unzip' command is not installed."
+            )
+        result = subprocess.run(
+            [unzip, "-qq", "-o", str(zip_filepath), "-d", str(target_dir)],
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
+        )
+        # Info-ZIP exits 1 for warnings after a complete extraction.
+        if result.returncode > 1:
+            raise RuntimeError(f"unzip failed on '{zip_filepath.name}': {result.stderr.strip()}")
 
     def _validated_extract_path(self, member_name: str, install_root: Path) -> Path:
         """Return the validated extraction target for a ZIP member."""

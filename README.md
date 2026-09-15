@@ -1,12 +1,12 @@
 # dosctl
 
-dosctl is a command-line tool that plays DOS games in DOSBox. Its catalog (the list of games it can play) comes from the Total DOS Collection Release 14 on the Internet Archive and holds over 20,000 entries. When you play a game for the first time, dosctl downloads and starts it in DOSBox with the game's directory as drive C:. This page is for a person who wants to play those games from a terminal on Linux, macOS or Windows. It shows how to install dosctl and play your first game, then describes every command with its flags and output and every file dosctl writes.
+dosctl is a command-line tool that plays DOS games in DOSBox. Its catalog (the list of games it can play) comes either from the Total DOS Collection Release 14 on the Internet Archive, which holds over 20,000 entries, or from a directory of zip archives on your machine (see [Where the games come from](#where-the-games-come-from)). When you play a game for the first time, dosctl unpacks it, downloading it first when it comes from the Internet Archive, and starts it in DOSBox with the game's directory as drive C:. This page is for a person who wants to play those games from a terminal on Linux, macOS or Windows. It shows how to install dosctl and play your first game, then describes every command with its flags and output and every file dosctl writes.
 
 ![dosctl Screenshot](dosctl-screenshot.png)
 
 ## Installation
 
-dosctl needs Python 3.8 or newer and DOSBox. dosctl runs the first DOSBox program it finds in the order of the table below. Linux and macOS are the primary platforms, and Windows support is experimental.
+dosctl needs Python 3.8 or newer and DOSBox. dosctl runs the first DOSBox program it finds in the order of the table below. Linux and macOS are the primary platforms, and Windows support is experimental. Some archives from the early 1990s use a compression method (PKZIP Implode) that Python cannot read; dosctl unpacks those with the `unzip` command, which macOS includes and Linux package managers provide.
 
 | Platform | DOSBox programs dosctl looks for, in order |
 |----------|-------------------------------------------|
@@ -73,7 +73,7 @@ Every game in the catalog has an ID of 8 characters. `list` and `search` print t
 
 ## Commands
 
-This section describes what every command does, its flags and what it prints. Where a command takes `GAME_ID|ALIAS`, you can pass an alias (a name you gave the game with `dosctl alias set`, see [dosctl alias](#dosctl-alias)) instead of the ID. `dosctl --help` lists the commands, and `dosctl <command> --help` shows a command's flags.
+This section describes what every command does, its flags and what it prints. Where a command takes `GAME_ID|ALIAS`, you can pass an alias instead of the ID (an alias is a name you give the game with `dosctl alias set`; see [dosctl alias](#dosctl-alias)). `dosctl --help` lists the commands, and `dosctl <command> --help` shows a command's flags.
 
 ### `dosctl list`
 
@@ -115,7 +115,7 @@ Found 19 game(s):
 
 ### `dosctl play GAME_ID|ALIAS [COMMAND_PARTS]...`
 
-Downloads and installs the game when it is not installed, starts DOSBox with the install directory as drive C:, runs one command inside DOSBox and closes DOSBox when that command ends. COMMAND_PARTS are the words after the ID, joined by spaces into the command, and they are optional. dosctl chooses the command by the first rule below that applies.
+Installs the game when it is not installed, downloading it first when it comes from the Internet Archive. It then starts DOSBox with the install directory as drive C:, runs one command inside DOSBox and closes DOSBox when that command ends. COMMAND_PARTS are the words after the ID, joined by spaces into the command, and they are optional. dosctl chooses the command by the first rule below that applies.
 
 | When | Command that runs |
 |------|-------------------|
@@ -217,7 +217,7 @@ Are you sure you want to continue? [y/N]: y
 
 ### `dosctl alias`
 
-Manages aliases. An alias is a name you give a game ID, and every command that takes `GAME_ID|ALIAS` (`play`, `inspect`, `info`, `delete`, `net host` and `net join`) accepts the alias in place of the ID. An alias starts with a lowercase letter or a digit and contains only lowercase letters, digits and hyphens. The three subcommands create, remove and list aliases.
+Manages aliases. An alias is a name you give a game ID. Every command that takes `GAME_ID|ALIAS` (`play`, `inspect`, `info`, `delete`, `net host` and `net join`) accepts the alias in place of the ID. An alias starts with a lowercase letter or a digit and contains only lowercase letters, digits and hyphens. The three subcommands create, remove and list aliases.
 
 | Subcommand | What it does |
 |------------|--------------|
@@ -236,11 +236,36 @@ Defined aliases:
   tentacle → 2c802b5e (Maniac Mansion- Day of the Tentacle v1.5 (1993)(LucasArts Entertainment Company LLC) [Adventure])
 ```
 
+### `dosctl col`
+
+Manages collections. A collection is a place dosctl reads games from. The built-in collection `tdc` is the Total DOS Collection Release 14 on the Internet Archive. A collection you add is a directory of zip archives on your machine (see [Where the games come from](#where-the-games-come-from)) or another Internet Archive page. One collection is in use at a time. Every command that needs a game or the list of games reads that one. A collection name starts with a lowercase letter or a digit and contains only lowercase letters, digits and hyphens. The four subcommands add, switch, list and remove collections.
+
+| Subcommand | What it does |
+|------------|--------------|
+| `dosctl col add <name> <source> [-t, --type <type>]` | Adds a collection; `<source>` is a directory or a URL, and `--type` is `local_file` (the default for a directory) or `tdc_release_14` (the default for a URL). Prints an error when the directory does not exist or the name is taken or invalid |
+| `dosctl col use <name>` | Makes the collection the one in use |
+| `dosctl col list` | Prints every collection with its type and source, `*` marking the one in use |
+| `dosctl col remove <name>` | Removes the collection and its catalog; installed games stay. Switches back to `tdc` when the removed one was in use; `tdc` itself cannot be removed |
+
+```bash
+dosctl col add mine ~/dos-games
+dosctl col use mine
+dosctl col list
+```
+```
+Collection 'mine' (local_file) added: /home/you/dos-games
+Use 'dosctl col use mine' to switch to it.
+Now using collection 'mine'.
+Collections:
+  tdc   tdc_release_14  https://ia800906.us.archive.org/view_archive.php?archive=/4/items/Total_DOS_Collection_Release_14/TDC_Release_14.zip
+* mine  local_file      /home/you/dos-games
+```
+
 ### `dosctl net host GAME_ID|ALIAS [COMMAND_PARTS]...`
 
-Hosts a multiplayer game. IPX is the network protocol that DOS games with a network option use. DOSBox emulates IPX and carries it over UDP, so one player's DOSBox runs an IPX server and each other player's DOSBox connects to that server. `net host` installs the game and chooses the command as `play` does, starts DOSBox with an IPX server on a UDP port, and runs the command. DOSBox stays open after the game exits, so you can start the game again without connecting again. Choose IPX in the game's own multiplayer menu once it runs.
+Hosts a multiplayer game. IPX is the network protocol that DOS games with a network option use. DOSBox emulates IPX over UDP. One player's DOSBox runs an IPX server and the other players' DOSBox instances connect to that server. `net host` installs the game and chooses the command as `play` does, starts DOSBox with an IPX server on a UDP port, and runs the command. DOSBox stays open after the game exits, so you can start the game again without connecting again. Choose IPX in the game's own multiplayer menu once it runs.
 
-By default `net host` serves your local network, so it prints your local IP address and the `net join` command the other players run. With `--internet`, it prepares play over the internet in three steps.
+By default `net host` serves your local network, so it prints your local IP address and the `net join` command for other players to run. With `--internet`, it prepares play over the internet in three steps.
 
 1. It asks your router by UPnP (a router feature that lets a program on your network ask for a port to be forwarded to it) to forward the UDP port to your machine. When UPnP fails, `net host` prints a message and continues. When the router's address is a carrier-grade NAT address (common with Starlink), `net host` says so, because port forwarding cannot work there and another player has to host.
 2. It finds your public IP address, from the router when UPnP succeeded and otherwise from `api.ipify.org` or `checkip.amazonaws.com`. When neither answers, `net host` says so and hosts without a discovery code.
@@ -351,21 +376,24 @@ dosctl keeps settings in a config directory and games in a data directory. The t
 | macOS | `~/.local/share/dosctl/` | `~/.local/share/dosctl/` |
 | Windows | `%USERPROFILE%\AppData\Local\dosctl\` | `%USERPROFILE%\AppData\Local\dosctl\` |
 
-The config directory holds three files, each created when first needed:
+The config directory holds four files, each created when first needed:
 
 ```
 <config-dir>/
   aliases.json       # Aliases, each with its game ID and game name
+  collections.json   # The collections added with `col add`, and the name of the one in use
   play_config.json   # The saved default command of each game
   ipx.conf           # A DOSBox config that turns IPX on, written for `net host` and `net join`
 ```
 
-The data directory holds the catalog, the downloaded archives and the installed games:
+The data directory holds the catalogs, the downloaded archives and the installed games. A directory collection has no catalog file, because dosctl reads the directory itself:
 
 ```
 <data-dir>/
   collections/
-    games.txt        # The catalog: one line per game with its ID, name, year and archive path
+    games.txt        # The catalog of `tdc`: one line per game with its ID, name, year and archive path
+    <name>/
+      games.txt      # The catalog of an added Internet Archive collection
   downloads/
     <game name>.zip  # A game's archive, kept after installation
   installed/
@@ -375,25 +403,30 @@ The data directory holds the catalog, the downloaded archives and the installed 
 
 ## Where the games come from
 
-The catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. Two environment variables replace that collection with a directory of your own; the table gives them.
-
-| Variable | Value |
-|----------|-------|
-| `DOSCTL_COLLECTION` | `local_file` |
-| `DOSCTL_COLLECTION_SOURCE` | The directory that holds the archives; `~` stands for your home directory |
-
-dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension, its year is the first four digits in parentheses in the file name, and its ID is the hash of the file's path relative to the directory. The directory is read again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`, `info` never reports such a game as downloaded, and `delete` never removes a file from the directory.
+By default the catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive, the built-in collection `tdc`. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. To play archives of your own, add the directory that holds them as a collection and switch to it (see [`dosctl col`](#dosctl-col)):
 
 ```bash
-export DOSCTL_COLLECTION=local_file
-export DOSCTL_COLLECTION_SOURCE=~/dos-games
+dosctl col add mine ~/dos-games
+dosctl col use mine
 dosctl list
 ```
 ```
+Collection 'mine' (local_file) added: /home/you/dos-games
+Use 'dosctl col use mine' to switch to it.
+Now using collection 'mine'.
 Available Games:
   [b1500715] (1993) Doom (1993)(id Software)
   [fe76b3eb] (1990) Prince of Persia (1990)
 ```
+
+dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension. Its year is the first four digits in parentheses in the file name. Its ID is the hash of the file's path relative to the directory. The directory is read again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`. `info` never reports such a game as downloaded. `delete` never removes a file from the directory.
+
+Two environment variables select a collection for one shell without adding it. They win over the collection in use. The table names them. `dosctl col list` prints a line saying so while they are set.
+
+| Variable | Value |
+|----------|-------|
+| `DOSCTL_COLLECTION` | The type: `local_file` or `tdc_release_14` |
+| `DOSCTL_COLLECTION_SOURCE` | The directory, or the URL of the Internet Archive page |
 
 You can add collections of other kinds (see [src/dosctl/collections/README.md](src/dosctl/collections/README.md)).
 
