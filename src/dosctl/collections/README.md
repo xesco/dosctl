@@ -34,7 +34,7 @@ BaseCollection
 
 ### BaseCollection
 
-`BaseCollection` (`base.py`) is an abstract class. It stores the source in the attribute `source` and declares three abstract methods. It also holds the `scope`, the name of the subdirectory of `downloads/` and `installed/` where the collection's games live; `installed_dir_for(base)` and `downloads_dir_for(base)` return the two directories under a base path, the base path itself when the `scope` is `None`. Every collection's `scope` is its name, so the built-in `tdc` installs into `installed/tdc/` too. `install_game` (`src/dosctl/lib/game.py`) and `resolve_install_path` move an install directory and its downloaded archive from the flat layout into the scope the first time the collection touches that game.
+`BaseCollection` (`base.py`) is an abstract class. It stores the source in the attribute `source` and declares three abstract methods. It also holds the `scope`, the name of the subdirectory of `downloads/` and `installed/` where the collection's games live; `installed_dir_for(base)` and `downloads_dir_for(base)` return the two directories under a base path, the base path itself when the `scope` is `None`. Every collection's `scope` is its name, so the built-in `tdc` installs into `installed/tdc/` too. dosctl does not move installations from the flat layout a previous version used; `install_game` (`src/dosctl/lib/game.py`) downloads and installs into the scope, and a flat-layout directory is ignored.
 
 | Method | What it does |
 |--------|--------------|

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from dosctl.collections.factory import create_collection
 from dosctl.lib import game as game_module
-from dosctl.lib.game import install_game, resolve_install_path
+from dosctl.lib.game import install_game
 
 
 def _make_zip(path: Path, members=None):
@@ -109,57 +109,28 @@ class TestInstallGameScoped:
         assert path_a.exists() and path_b.exists()
 
 
-class TestLegacyMigration:
-    def test_resolve_install_path_moves_flat_install_into_scope(self, tmp_path):
+class TestLegacyInstallIgnored:
+    def test_flat_install_is_ignored_and_game_installs_fresh_into_scope(self, tmp_path):
+        """A legacy flat-layout install is dead data: untouched, and a new
+        install lands in the collection's scope."""
+        games_dir = tmp_path / "games"
+        games_dir.mkdir()
+        game_id = _game_archive(games_dir)
+
         installed = tmp_path / "installed"
-        game_dir = installed / "abc12345"
-        game_dir.mkdir(parents=True)
-        (game_dir / "GAME.EXE").write_text("x")
+        legacy = installed / game_id
+        legacy.mkdir(parents=True)
+        (legacy / "OLD.EXE").write_text("old")
+        downloads = tmp_path / "downloads"
+        downloads.mkdir()
 
         with tempfile.TemporaryDirectory() as cache_dir:
-            col = create_collection("local_file", str(tmp_path), cache_dir, scope="mine")
-            with patch.object(game_module, "INSTALLED_DIR", installed):
-                result = resolve_install_path(col, "abc12345")
+            col = create_collection("local_file", str(games_dir), cache_dir, scope="mine")
+            with patch.object(game_module, "DOWNLOADS_DIR", downloads), \
+                 patch.object(game_module, "INSTALLED_DIR", installed):
+                _, install_path = install_game(col, game_id)
 
-        assert result == installed / "mine" / "abc12345"
-        assert (result / "GAME.EXE").read_text() == "x"
-        assert not (installed / "abc12345").exists()
-
-    def test_resolve_install_path_keeps_flat_install_when_unscoped(self, tmp_path):
-        installed = tmp_path / "installed"
-        game_dir = installed / "abc12345"
-        game_dir.mkdir(parents=True)
-
-        with tempfile.TemporaryDirectory() as cache_dir:
-            col = create_collection("local_file", str(tmp_path), cache_dir)
-            with patch.object(game_module, "INSTALLED_DIR", installed):
-                result = resolve_install_path(col, "abc12345")
-
-        assert result == installed / "abc12345"
-        assert game_dir.exists()
-
-    def test_resolve_install_path_does_not_touch_scoped_install(self, tmp_path):
-        installed = tmp_path / "installed"
-        scoped = installed / "mine" / "abc12345"
-        scoped.mkdir(parents=True)
-        flat = installed / "abc12345"
-        flat.mkdir()
-
-        with tempfile.TemporaryDirectory() as cache_dir:
-            col = create_collection("local_file", str(tmp_path), cache_dir, scope="mine")
-            with patch.object(game_module, "INSTALLED_DIR", installed):
-                result = resolve_install_path(col, "abc12345")
-
-        assert result == scoped
-        assert flat.exists()
-
-    def test_resolve_install_path_is_a_noop_for_missing_game(self, tmp_path):
-        installed = tmp_path / "installed"
-
-        with tempfile.TemporaryDirectory() as cache_dir:
-            col = create_collection("local_file", str(tmp_path), cache_dir, scope="mine")
-            with patch.object(game_module, "INSTALLED_DIR", installed):
-                result = resolve_install_path(col, "missing1")
-
-        assert result == installed / "mine" / "missing1"
-        assert not result.exists()
+        assert install_path == installed / "mine" / game_id
+        assert (install_path / "GAME.EXE").exists()
+        # The legacy directory is untouched.
+        assert (legacy / "OLD.EXE").read_text() == "old"

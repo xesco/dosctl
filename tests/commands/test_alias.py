@@ -181,7 +181,7 @@ class TestAliasResolutionInCommands:
         (game_path / "DOOM.EXE").touch()
 
         with _patch_aliases(tmp_path):
-            with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
+            with patch("dosctl.commands.inspect.INSTALLED_DIR", tmp_path):
                 with patch("dosctl.lib.decorators.create_collection") as mock_col:
                     mock_col.return_value = _make_collection()
                     result = CliRunner().invoke(cli, ["inspect", "doom"])
@@ -196,7 +196,7 @@ class TestAliasResolutionInCommands:
         game_path.mkdir()
 
         with _patch_aliases(tmp_path):
-            with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
+            with patch("dosctl.commands.delete.INSTALLED_DIR", tmp_path):
                 with patch("dosctl.commands.delete.DOWNLOADS_DIR", tmp_path):
                     with patch("dosctl.lib.decorators.create_collection") as mock_col:
                         mock_col.return_value = _make_collection()
@@ -217,7 +217,7 @@ class TestAliasResolutionInCommands:
 
         with _patch_aliases(tmp_path):
             with _patch_play_config(tmp_path):
-                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
+                with patch("dosctl.commands.delete.INSTALLED_DIR", tmp_path):
                     with patch("dosctl.commands.delete.DOWNLOADS_DIR", tmp_path):
                         with patch(
                             "dosctl.lib.decorators.create_collection"
@@ -247,7 +247,7 @@ class TestAliasResolutionInCommands:
 
         with _patch_aliases(tmp_path):
             with _patch_play_config(tmp_path):
-                with patch("dosctl.lib.game.INSTALLED_DIR", tmp_path):
+                with patch("dosctl.commands.delete.INSTALLED_DIR", tmp_path):
                     with patch("dosctl.commands.delete.DOWNLOADS_DIR", tmp_path):
                         with patch(
                             "dosctl.lib.decorators.create_collection"

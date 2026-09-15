@@ -2,11 +2,10 @@ import shutil
 
 import click
 
-from dosctl.config import DOWNLOADS_DIR
+from dosctl.config import DOWNLOADS_DIR, INSTALLED_DIR
 from dosctl.lib.aliases import remove_aliases_for_game_id, resolve_game_id
 from dosctl.lib.config_store import get_game_command, set_game_command
 from dosctl.lib.decorators import ensure_cache
-from dosctl.lib.game import resolve_install_path
 
 
 @click.command()
@@ -24,7 +23,7 @@ def delete(collection, game_id):
         return
 
     game_name = game["name"]
-    game_install_path = resolve_install_path(collection, game_id, f"{game_name}.zip")
+    game_install_path = collection.installed_dir_for(INSTALLED_DIR) / game_id
 
     if not game_install_path.exists() or not game_install_path.is_dir():
         click.echo(f"Error: Game with ID '{game_id}' is not installed.", err=True)
