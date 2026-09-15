@@ -17,15 +17,20 @@ def delete(collection, game_id):
     Deletes an installed game.
     """
     game_id = resolve_game_id(game_id)
-    game_install_path = resolve_install_path(collection, game_id)
+    game = collection.find_game(game_id)
+
+    if not game:
+        click.echo(f"Error: No game with ID '{game_id}' found in the collection.", err=True)
+        return
+
+    game_name = game["name"]
+    game_install_path = resolve_install_path(collection, game_id, f"{game_name}.zip")
 
     if not game_install_path.exists() or not game_install_path.is_dir():
         click.echo(f"Error: Game with ID '{game_id}' is not installed.", err=True)
         return
 
-    game = collection.find_game(game_id)
-    game_name = game["name"] if game else f"Game ID {game_id}"
-    downloaded_zip = DOWNLOADS_DIR / f"{game_name}.zip"
+    downloaded_zip = collection.downloads_dir_for(DOWNLOADS_DIR) / f"{game_name}.zip"
     saved_command = get_game_command(game_id)
 
     click.echo(f"You are about to delete the files for '{game_name}'.")

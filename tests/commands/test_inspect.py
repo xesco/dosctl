@@ -13,6 +13,7 @@ def _make_collection(game_id="abc12345", game_name="Doom"):
     )
     mock.scope = None
     mock.installed_dir_for.side_effect = lambda base: base
+    mock.downloads_dir_for.side_effect = lambda base: base
     return mock
 
 

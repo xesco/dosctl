@@ -22,7 +22,7 @@ class BaseCollection(ABC):
     def __init__(self, source: str):
         self.source = source
         # Name of the subdirectory of downloads/ and installed/ that holds this
-        # collection's games; None keeps the legacy flat layout.
+        # collection's games; None is only used by tests and direct construction.
         self.scope = None
 
     def installed_dir_for(self, base: Path) -> Path:

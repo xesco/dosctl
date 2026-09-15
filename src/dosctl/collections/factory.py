@@ -19,7 +19,7 @@ def create_collection(collection_type: str, source: str, cache_dir: str, scope: 
         source: The source of the collection: a URL, or a directory for "local_file"
         cache_dir: Directory for caching collection data
         scope: Name of the subdirectory of downloads/ and installed/ that holds
-            this collection's games; None keeps the legacy flat layout
+            this collection's games; None falls back to the flat layout
 
     Returns:
         An instance of the appropriate collection class

@@ -165,7 +165,7 @@ dosctl inspect -e 2c802b5e
 ```
 ```
 Inspecting files for 'Maniac Mansion- Day of the Tentacle v1.5 (1993)(LucasArts Entertainment Company LLC) [Adventure]' (ID: 2c802b5e)
-Location: /Users/xesco/.local/share/dosctl/installed/2c802b5e
+Location: /Users/xesco/.local/share/dosctl/installed/tdc/2c802b5e
 ----------------------------------------
 Executable files:
   DOTT.EXE
@@ -194,7 +194,7 @@ ID:      2c802b5e
 Year:    1993
 Alias:   tentacle
 Status:  Installed
-Path:    /Users/xesco/.local/share/dosctl/installed/2c802b5e
+Path:    /Users/xesco/.local/share/dosctl/installed/tdc/2c802b5e
 Command: TENTACLE.EXE
 ```
 
@@ -207,8 +207,8 @@ dosctl delete 6d7c46fb
 ```
 ```
 You are about to delete the files for 'Star Control II (1992)(Accolade, Inc.) [Action, Strategy]'.
-Installation: /Users/xesco/.local/share/dosctl/installed/6d7c46fb
-Downloaded Archive: /Users/xesco/.local/share/dosctl/downloads/Star Control II (1992)(Accolade, Inc.) [Action, Strategy].zip
+Installation: /Users/xesco/.local/share/dosctl/installed/tdc/6d7c46fb
+Downloaded Archive: /Users/xesco/.local/share/dosctl/downloads/tdc/Star Control II (1992)(Accolade, Inc.) [Action, Strategy].zip
 Are you sure you want to continue? [y/N]: y
 ✅ Successfully deleted installation directory.
 ✅ Successfully deleted downloaded archive.
@@ -386,7 +386,7 @@ The config directory holds four files, each created when first needed:
   ipx.conf           # A DOSBox config that turns IPX on, written for `net host` and `net join`
 ```
 
-The data directory holds the catalogs, the downloaded archives and the installed games. A directory collection has no catalog file, because dosctl reads the directory itself. Games install into their own subdirectory per collection, named after the collection, so two collections cannot collide on the same game ID:
+The data directory holds the catalogs, the downloaded archives and the installed games. A directory collection has no catalog file, because dosctl reads the directory itself. Every collection installs its games into its own subdirectory of `installed/` and `downloads/`, named after the collection, so two collections cannot collide on the same game ID:
 
 ```
 <data-dir>/
@@ -395,15 +395,12 @@ The data directory holds the catalogs, the downloaded archives and the installed
     <name>/
       games.txt      # The catalog of an added Internet Archive or S3 collection
   downloads/
-    <game name>.zip  # A game's archive, kept after installation
-    <collection>/    # An added collection's downloads, when it has installed games
+    <collection>/    # A collection's downloads: tdc, or the name of an added collection
       <game name>.zip
   installed/
-    <game-id>/       # A game's install directory of `tdc`, the unpacked archive
-      dosbox.conf    # Optional; DOSBox options for this game alone
     <collection>/
-      <game-id>/     # A game's install directory of an added collection
-        dosbox.conf
+      <game-id>/     # A game's install directory, the unpacked archive
+        dosbox.conf  # Optional; DOSBox options for this game alone
 ```
 
 ## Where the games come from
@@ -434,7 +431,7 @@ Available Games:
 
 dosctl treats every `.zip` file in the directory and its subdirectories as a game. The game's name is the file name without the extension. The game's year is the first four digits in parentheses in the file name. The game's ID is the first 8 characters of the SHA-1 hash of the file's path relative to the directory. dosctl reads the directory again on every command, so `refresh` is never needed. `play` unpacks the archive from the directory, so nothing is written to `downloads/`. `info` never reports a game from the directory as downloaded. `delete` never removes a file from the directory.
 
-Every added collection installs its games into `installed/<collection>/` (and keeps its downloads in `downloads/<collection>/`), so the same game ID in two collections stays two installations. When a collection first installs a game that was installed before this layout existed, dosctl moves the old flat directory into the collection's scope (see [Files](#files)).
+Every collection installs its games into `installed/<collection>/` (and keeps its downloads in `downloads/<collection>/`), so the same game ID in two collections stays two installations. When a collection first touches a game that was installed before this layout existed, dosctl moves the old install directory and its downloaded archive into the collection's scope (see [Files](#files)).
 
 Two environment variables select a collection for one shell without adding it. They take precedence over the collection in use. While the variables are set, `dosctl col list` prints a line saying so. The table names them.
 

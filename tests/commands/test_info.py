@@ -14,6 +14,7 @@ def _make_collection(game=GAME):
     mock.find_game.side_effect = lambda gid: game if gid == game["id"] else None
     mock.scope = None
     mock.installed_dir_for.side_effect = lambda base: base
+    mock.downloads_dir_for.side_effect = lambda base: base
     return mock
 
 

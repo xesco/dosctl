@@ -17,7 +17,7 @@ def install_game(collection, game_id):
 
     # Each collection installs into its own subdirectory when scoped, so that
     # two collections cannot collide on the same game ID.
-    game_install_path = resolve_install_path(collection, game_id)
+    game_install_path = resolve_install_path(collection, game_id, game["name"] + ".zip")
 
     # If the game is already installed, we're done.
     if game_install_path.exists():
@@ -38,10 +38,11 @@ def install_game(collection, game_id):
     return game, game_install_path
 
 
-def resolve_install_path(collection, game_id):
+def resolve_install_path(collection, game_id, archive_name=None):
     """
     The install directory for the game under the collection's scope, moving a
-    legacy flat-layout installation into the scope on first sight.
+    legacy flat-layout installation and its downloaded archive into the scope
+    on first sight.
     """
     scoped_path = collection.installed_dir_for(INSTALLED_DIR) / game_id
     if collection.scope:
@@ -50,4 +51,11 @@ def resolve_install_path(collection, game_id):
             scoped_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(legacy_path), str(scoped_path))
             click.echo(f"Moved '{game_id}' into '{scoped_path.parent}'.")
+        if archive_name:
+            legacy_zip = DOWNLOADS_DIR / archive_name
+            scoped_zip = collection.downloads_dir_for(DOWNLOADS_DIR) / archive_name
+            if legacy_zip.exists() and not scoped_zip.exists():
+                scoped_zip.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(legacy_zip), str(scoped_zip))
+                click.echo(f"Moved '{archive_name}' into '{scoped_zip.parent}'.")
     return scoped_path
