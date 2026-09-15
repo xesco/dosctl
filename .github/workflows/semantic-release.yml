@@ -28,7 +28,7 @@ jobs:
           node-version: '24'
 
       - name: Install release tooling
-        run: npm install -g semantic-release @semantic-release/exec @semantic-release/github @semantic-release/git
+        run: npm install -g semantic-release @semantic-release/changelog @semantic-release/exec @semantic-release/github @semantic-release/git
 
       - name: Run tests
         run: |
