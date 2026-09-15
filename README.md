@@ -71,7 +71,7 @@ Every game in the catalog has an ID of 8 characters. `list` and `search` print t
 
 ## Commands
 
-This section describes what every command does, its flags and what it prints. Where a command takes `GAME_ID|ALIAS`, you can pass an alias instead of the ID (an alias is a name you give the game with `dosctl alias set`; see [`dosctl` alias](#`dosctl`-alias)). `dosctl --help` lists the commands, and `dosctl <command> --help` shows a command's flags.
+This section describes what every command does, its flags and what it prints. Where a command takes `GAME_ID|ALIAS`, you can pass an alias instead of the ID (an alias is a name you give the game with `dosctl alias set`; see [`dosctl` alias](#dosctl-alias)). `dosctl --help` lists the commands, and `dosctl <command> --help` shows a command's flags.
 
 ### `dosctl list`
 
@@ -330,8 +330,8 @@ dosctl 1.11.0
 
 | Platform | Config directory | Data directory |
 |----------|------------------|----------------|
-| Linux | `~/.config/`dosctl`/` | `~/.local/share/`dosctl`/` |
-| macOS | `~/.local/share/`dosctl`/` | `~/.local/share/`dosctl`/` |
+| Linux | `~/.config/dosctl/` | `~/.local/share/dosctl/` |
+| macOS | `~/.local/share/dosctl/` | `~/.local/share/dosctl/` |
 | Windows | `%USERPROFILE%\AppData\Local\`dosctl`\` | `%USERPROFILE%\AppData\Local\`dosctl`\` |
 
 The config directory holds four files, each created when first needed:
@@ -356,7 +356,7 @@ The data directory holds the catalogs, the downloaded archives and the installed
 
 ## Where the games come from
 
-By default the catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive, the built-in collection `tdc`. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. To play archives of your own, add the place that holds them as a collection and switch to it (see [`dosctl col`](#`dosctl`-col)): a directory of zip archives, or an S3-compatible bucket (AWS S3, MinIO, Backblaze B2, DigitalOcean Spaces, Wasabi) that allows public reads.
+By default the catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive, the built-in collection `tdc`. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. To play archives of your own, add the place that holds them as a collection and switch to it (see [`dosctl` col](#dosctl-col)): a directory of zip archives, or an S3-compatible bucket (AWS S3, MinIO, Backblaze B2, DigitalOcean Spaces, Wasabi) that allows public reads.
 
 ```bash
 dosctl col add mine ~/src/dosctl/src/dosgames                      # A directory
@@ -381,7 +381,7 @@ Two environment variables select a collection for one shell without adding it. T
 | `DOSCTL_COLLECTION` | The type: `local_file`, `tdc_release_14` or `s3` |
 | `DOSCTL_COLLECTION_SOURCE` | The directory, the URL of the Internet Archive page, or the S3 bucket URI |
 
-You can add collections of other kinds (see [src/`dosctl`/collections/README.md](src/`dosctl`/collections/README.md)).
+You can add collections of other kinds (see [src/dosctl/collections/README.md](src/dosctl/collections/README.md)).
 
 ## Development
 
