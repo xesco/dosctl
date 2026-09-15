@@ -1,5 +1,17 @@
 # Changelog
 
+# [1.11.0](https://github.com/xesco/dosctl/compare/v1.10.0...v1.11.0) (2026-09-15)
+
+
+### Bug Fixes
+
+* unpack archives with PKZIP Implode members through the unzip command ([8c4edcd](https://github.com/xesco/dosctl/commit/8c4edcdd198d351e308f0674851da77f6a832645))
+
+
+### Features
+
+* add the col command to manage collections ([de1f3ba](https://github.com/xesco/dosctl/commit/de1f3baf9abba8b41a52e8334a548d3dc13c8d5d))
+
 # [1.10.0](https://github.com/xesco/dosctl/compare/v1.9.4...v1.10.0) (2026-09-14)
 
 
