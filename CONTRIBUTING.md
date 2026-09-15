@@ -73,7 +73,7 @@ When you push to `main`:
 1. Semantic-release analyzes commit messages since last release
 2. Determines version bump based on commit types
 3. Updates version in `pyproject.toml` and `__init__.py`
-4. Generates changelog
-5. Creates GitHub release with release notes
+4. Prepends the release notes to `CHANGELOG.md`
+5. Creates GitHub release with the same notes
 6. Publishes to PyPI automatically
-7. Commits version updates back to repo
+7. Commits `CHANGELOG.md` and the version updates back to repo
