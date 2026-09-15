@@ -2,6 +2,7 @@ import click
 
 from . import __version__
 from .commands.alias import alias
+from .commands.col import col
 from .commands.delete import delete
 from .commands.info import info
 from .commands.inspect import inspect
@@ -33,6 +34,7 @@ cli.add_command(delete)
 cli.add_command(refresh)
 cli.add_command(net)
 cli.add_command(alias)
+cli.add_command(col)
 cli.add_command(info)
 cli.add_command(version)
 

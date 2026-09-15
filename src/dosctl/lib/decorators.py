@@ -1,12 +1,8 @@
 from functools import wraps
 
 from dosctl.collections.factory import create_collection
-from dosctl.config import (
-    COLLECTION_CACHE_DIR,
-    DEFAULT_COLLECTION_SOURCE,
-    DEFAULT_COLLECTION_TYPE,
-    ensure_dirs_exist,
-)
+from dosctl.config import ensure_dirs_exist
+from dosctl.lib.collections_store import resolve_collection
 
 
 def ensure_cache(f):
@@ -17,10 +13,11 @@ def ensure_cache(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         ensure_dirs_exist()
+        resolved = resolve_collection()
         collection = create_collection(
-            DEFAULT_COLLECTION_TYPE,
-            source=DEFAULT_COLLECTION_SOURCE,
-            cache_dir=COLLECTION_CACHE_DIR,
+            resolved.type,
+            source=resolved.source,
+            cache_dir=resolved.cache_dir,
         )
         # This will auto-refresh if the cache is missing
         collection.ensure_cache_is_present()
