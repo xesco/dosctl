@@ -13,12 +13,12 @@
 | Linux, macOS | `dosbox-staging` on your PATH, then `dosbox` on your PATH |
 | Windows | `dosbox.exe` or `dosbox` on your PATH, then `C:\Program Files\DOSBox\dosbox.exe`, then `C:\Program Files (x86)\DOSBox\dosbox.exe` |
 
-Install DOSBox with your package manager, then install `dosctl` with pip:
+Install DOSBox with your package manager, then install `dosctl` from PyPI with pip:
 
 ```bash
-brew install dosbox          # macOS
-sudo apt install dosbox      # Ubuntu/Debian
-pip install dosctl
+brew install dosbox          # macOS: DOSBox
+sudo apt install dosbox      # Ubuntu/Debian: DOSBox
+pip install dosctl           # Every platform: dosctl
 ```
 
 uv or pipx installs `dosctl` in an environment of its own. pip can also install `dosctl` directly from the GitHub repository instead of the released package:
