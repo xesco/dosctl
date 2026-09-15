@@ -248,7 +248,7 @@ Manages collections. A collection is a place dosctl reads games from. The built-
 | `dosctl col remove <name>` | Removes the collection and its catalog; installed games stay. Switches back to `tdc` when the removed one was in use; `tdc` itself cannot be removed |
 
 ```bash
-dosctl col add mine ~/src/dosctl/src/dosgames
+dosctl col add -t local_file mine ~/src/dosctl/src/dosgames
 dosctl col use mine
 dosctl col list
 ```
@@ -406,7 +406,7 @@ The data directory holds the catalogs, the downloaded archives and the installed
 By default the catalog is the list of zip archives in the [Total DOS Collection Release 14](https://archive.org/details/Total_DOS_Collection_Release_14) on the Internet Archive, the built-in collection `tdc`. Each game's ID is the first 8 characters of the SHA-1 hash of its archive path. To play archives of your own, add the directory that holds them as a collection and switch to it (see [`dosctl col`](#dosctl-col)):
 
 ```bash
-dosctl col add mine ~/src/dosctl/src/dosgames
+dosctl col add -t local_file mine ~/src/dosctl/src/dosgames
 dosctl col use mine
 dosctl list
 ```
