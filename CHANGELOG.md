@@ -1,5 +1,33 @@
 # Changelog
 
+# [2.0.0](https://github.com/xesco/dosctl/compare/v1.11.0...v2.0.0) (2026-09-15)
+
+
+* refactor!: remove automatic migration of flat-layout installs ([e9f5476](https://github.com/xesco/dosctl/commit/e9f54761faee50b42b5720efec092303febba656))
+
+
+### Bug Fixes
+
+* scope downloads with the install and correct the tdc scope docs ([2b8dbd4](https://github.com/xesco/dosctl/commit/2b8dbd45eb12f80ee46c65a5591d82c18e868f19))
+
+
+### Features
+
+* add S3-compatible collections and scope installed games per collection ([cd93ef6](https://github.com/xesco/dosctl/commit/cd93ef65bdfc00235ca4cc80cc6b9ebd56df359a))
+
+
+### BREAKING CHANGES
+
+* Games now install per collection. Every collection,
+the built-in tdc included, installs into installed/<collection>/
+<game-id>/ and keeps its downloads in downloads/<collection>/. dosctl
+does not move existing installations: games installed with a previous
+version stay in the old location and are ignored; playing a game again
+downloads and installs it into the new location. To migrate by hand,
+move each collection's directories into place (mv installed/<game-id>
+installed/tdc/<game-id>, same for the archive in downloads/), or
+re-play each game and delete the leftover flat directories.
+
 # [1.11.0](https://github.com/xesco/dosctl/compare/v1.10.0...v1.11.0) (2026-09-15)
 
 
